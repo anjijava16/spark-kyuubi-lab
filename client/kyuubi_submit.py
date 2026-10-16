@@ -33,7 +33,10 @@ import os
 import sys
 import time
 
-import requests
+try:
+    import requests
+except ImportError:          # lets gen_payloads.py import this file without it
+    requests = None
 
 TERMINAL = {"FINISHED", "ERROR", "CANCELED", "CLOSED"}
 PYTHON_RUNNER = "org.apache.spark.deploy.PythonRunner"
@@ -43,7 +46,13 @@ PYTHON_RUNNER = "org.apache.spark.deploy.PythonRunner"
 # only needs them on its classpath plus the format's SQL extension/catalog.
 # Delta and Iceberg combine fine (Iceberg uses its own catalog "ice");
 # Hudi wants spark_catalog for itself, so keep Hudi jobs separate.
+# "kafka" is only a connector (no catalog), so it combines with anything.
 LAKEHOUSE_PROFILES = {
+    "kafka": {
+        "classpath": "/opt/lakehouse/kafka/*",
+        "extensions": "",
+        "conf": {},
+    },
     "delta": {
         "classpath": "/opt/lakehouse/delta/*",
         "extensions": "io.delta.sql.DeltaSparkSessionExtension",
@@ -80,7 +89,7 @@ def lakehouse_conf(formats):
     unknown = [f for f in formats if f not in LAKEHOUSE_PROFILES]
     if unknown:
         sys.exit(f"--with: unknown format(s) {unknown}; choose from {sorted(LAKEHOUSE_PROFILES)}")
-    if "hudi" in formats and len(formats) > 1:
+    if "hudi" in formats and ({"delta", "iceberg"} & set(formats)):
         sys.exit("--with: hudi can't be combined with delta/iceberg (both want spark_catalog)")
     if not formats:
         return {}
@@ -88,15 +97,64 @@ def lakehouse_conf(formats):
     conf = {
         "spark.driver.extraClassPath": cp,
         "spark.executor.extraClassPath": cp,
-        "spark.sql.extensions": ",".join(LAKEHOUSE_PROFILES[f]["extensions"] for f in formats),
     }
+    extensions = [LAKEHOUSE_PROFILES[f]["extensions"] for f in formats if LAKEHOUSE_PROFILES[f]["extensions"]]
+    if extensions:
+        conf["spark.sql.extensions"] = ",".join(extensions)
     for f in formats:
         conf.update(LAKEHOUSE_PROFILES[f]["conf"])
     return conf
 
 
+def build_request(resource, name, class_name=None, conf=None, args=None,
+                  py_files=None, files=None, jars=None, remote=False):
+    """The exact batch request this client sends to POST /api/v1/batches.
+
+    Returns (request_json, uploads). uploads is [] for remote resources, or
+    [(form_field, local_path), ...] for multipart upload mode.
+    gen_payloads.py uses this too, so the documented payloads are the real ones.
+    """
+    # Kyuubi 1.12 rejects SPARK batches without className, Python ones
+    # included. For a .py file, spark-submit runs PythonRunner no matter
+    # what --class says, so send that and be honest about it.
+    if not class_name:
+        if resource.lower().endswith(".py"):
+            class_name = PYTHON_RUNNER
+        else:
+            sys.exit("--class is required for JAR jobs (Kyuubi rejects SPARK "
+                     "batches without className)")
+    req = {
+        "batchType": "SPARK",
+        "name": name,
+        "className": class_name,
+        # Kyuubi also requires resource on uploads; it replaces this
+        # with the path of the uploaded copy on its side.
+        "resource": resource if remote else os.path.basename(resource),
+        "conf": dict(conf or {}),
+        "args": list(args or []),
+    }
+    extras = (("spark.submit.pyFiles", py_files), ("spark.files", files), ("spark.jars", jars))
+    if remote:
+        # paths are resolved by spark-submit on the Kyuubi server
+        for key, vals in extras:
+            if vals:
+                req["conf"][key] = ",".join(vals)
+        return req, []
+    uploads = [("resourceFile", resource)]
+    extra_map = {}
+    for key, vals in extras:
+        if vals:
+            extra_map[key] = ",".join(os.path.basename(v) for v in vals)
+            uploads += [(os.path.basename(v), v) for v in vals]
+    if extra_map:
+        req["extraResourcesMap"] = extra_map
+    return req, uploads
+
+
 class Kyuubi:
     def __init__(self, url, user=None, password=None, timeout=60):
+        if requests is None:
+            sys.exit("this needs the requests package: pip install requests")
         self.base = url.rstrip("/") + "/api/v1/batches"
         self.s = requests.Session()
         self.timeout = timeout
@@ -110,63 +168,22 @@ class Kyuubi:
 
     def submit(self, resource, name, class_name=None, conf=None, args=None,
                py_files=None, files=None, jars=None, remote=False):
-        # Kyuubi 1.12 rejects SPARK batches without className, Python ones
-        # included. For a .py file, spark-submit runs PythonRunner no matter
-        # what --class says, so send that and be honest about it.
-        if not class_name:
-            if resource.lower().endswith(".py"):
-                class_name = PYTHON_RUNNER
-            else:
-                sys.exit("--class is required for JAR jobs (Kyuubi rejects SPARK "
-                         "batches without className)")
-
-        req = {
-            "batchType": "SPARK",
-            "name": name,
-            "className": class_name,
-            # Kyuubi also requires resource on uploads; it replaces this
-            # with the path of the uploaded copy on its side.
-            "resource": resource if remote else os.path.basename(resource),
-            "conf": conf or {},
-            "args": args or [],
-        }
-
+        req, uploads = build_request(resource, name, class_name, conf, args,
+                                     py_files, files, jars, remote)
         if remote:
-            # resource path is resolved on the Kyuubi server side
-            for key, vals in (("spark.submit.pyFiles", py_files),
-                              ("spark.files", files),
-                              ("spark.jars", jars)):
-                if vals:
-                    req["conf"][key] = ",".join(vals)
             r = self.s.post(self.base, json=req, timeout=self.timeout)
             return self._check(r)
 
-        # Upload mode: main resource goes in "resourceFile"; extra local files
-        # go in their own parts and are mapped to Spark conf keys through
-        # extraResourcesMap (Kyuubi 1.9+).
-        parts = []
+        # Upload mode: multipart/form-data. Part "batchRequest" is the JSON,
+        # part "resourceFile" the main file, and each extra file gets a part
+        # named after the file (that's how extraResourcesMap finds it).
         handles = []
-
-        def add(field, path):
-            fh = open(path, "rb")
-            handles.append(fh)
-            parts.append((field, (os.path.basename(path), fh,
-                                  "application/octet-stream")))
-            return os.path.basename(path)
-
-        add("resourceFile", resource)
-        extra = {}
-        for key, vals in (("spark.submit.pyFiles", py_files),
-                          ("spark.files", files),
-                          ("spark.jars", jars)):
-            if vals:
-                extra[key] = ",".join(add(os.path.basename(v), v) for v in vals)
-        if extra:
-            req["extraResourcesMap"] = extra
-
-        parts.insert(0, ("batchRequest",
-                         (None, json.dumps(req), "application/json")))
+        parts = [("batchRequest", (None, json.dumps(req), "application/json"))]
         try:
+            for field, path in uploads:
+                fh = open(path, "rb")
+                handles.append(fh)
+                parts.append((field, (os.path.basename(path), fh, "application/octet-stream")))
             r = self.s.post(self.base, files=parts, timeout=self.timeout)
         finally:
             for fh in handles:
@@ -186,7 +203,7 @@ class Kyuubi:
         return self._check(self.s.delete(f"{self.base}/{batch_id}",
                                          timeout=self.timeout))
 
-    def list(self, size=20):
+    def list(self, size=100):
         return self._check(self.s.get(self.base,
                                       params={"from": 0, "size": size},
                                       timeout=self.timeout))
@@ -265,8 +282,8 @@ def main():
     s.add_argument("--no-wait", action="store_true",
                    help="return the batch id right away")
     s.add_argument("--with", dest="with_formats", default="",
-                   help="table formats the job uses: delta, iceberg, hudi "
-                        "(comma-separated; delta+iceberg can be combined)")
+                   help="connectors the job uses: delta, iceberg, hudi, kafka "
+                        "(comma-separated; anything but hudi+delta/iceberg combines)")
 
     for c in ("status", "log", "kill"):
         p = sub.add_parser(c)

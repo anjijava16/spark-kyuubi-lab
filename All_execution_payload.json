@@ -1,0 +1,1206 @@
+{
+  "generated_from": "client/job_catalog.py",
+  "kyuubi_rest": "http://localhost:10099/api/v1/batches",
+  "run_id_placeholder": "demo1",
+  "groups": [
+    "core",
+    "formats",
+    "hive",
+    "postgres",
+    "lakehouse",
+    "orders",
+    "streaming"
+  ],
+  "jobs": [
+    {
+      "name": "jar-sparkpi",
+      "group": "core",
+      "kind": "batch",
+      "description": "example JAR that ships with Spark, path on the Kyuubi host",
+      "in_test_suite": true,
+      "success_marker": "Pi is roughly",
+      "expected_state": "FINISHED",
+      "connectors": "",
+      "cli": "python client/kyuubi_submit.py --url http://localhost:10099 submit /opt/spark/examples/jars/spark-examples_2.13-4.1.3.jar --remote --class org.apache.spark.examples.SparkPi --name jar-sparkpi -- 20",
+      "rest": {
+        "method": "POST",
+        "url": "http://localhost:10099/api/v1/batches",
+        "content_type": "application/json",
+        "body": {
+          "batchType": "SPARK",
+          "name": "jar-sparkpi",
+          "className": "org.apache.spark.examples.SparkPi",
+          "resource": "/opt/spark/examples/jars/spark-examples_2.13-4.1.3.jar",
+          "conf": {},
+          "args": [
+            "20"
+          ]
+        }
+      },
+      "curl": "curl -s -X POST http://localhost:10099/api/v1/batches \\\n  -u anji: -H 'Content-Type: application/json' \\\n  -d @- <<'JSON'\n{\n  \"batchType\": \"SPARK\",\n  \"name\": \"jar-sparkpi\",\n  \"className\": \"org.apache.spark.examples.SparkPi\",\n  \"resource\": \"/opt/spark/examples/jars/spark-examples_2.13-4.1.3.jar\",\n  \"conf\": {},\n  \"args\": [\n    \"20\"\n  ]\n}\nJSON",
+      "kyuubi_ctl_yaml": "apiVersion: v1\nusername: anji\nrequest:\n  batchType: SPARK\n  name: jar-sparkpi\n  resource: /opt/spark/examples/jars/spark-examples_2.13-4.1.3.jar\n  className: org.apache.spark.examples.SparkPi\n  args:\n    - \"20\"\n  configs:\n    {}\noptions:\n  verbose: true"
+    },
+    {
+      "name": "py-smoke",
+      "group": "core",
+      "kind": "batch",
+      "description": "PySpark from RustFS, checks executors respond",
+      "in_test_suite": true,
+      "success_marker": "SMOKE TEST OK",
+      "expected_state": "FINISHED",
+      "connectors": "",
+      "cli": "python client/kyuubi_submit.py --url http://localhost:10099 submit s3a://jobs/python/01_smoke_test.py --remote --name py-smoke",
+      "rest": {
+        "method": "POST",
+        "url": "http://localhost:10099/api/v1/batches",
+        "content_type": "application/json",
+        "body": {
+          "batchType": "SPARK",
+          "name": "py-smoke",
+          "className": "org.apache.spark.deploy.PythonRunner",
+          "resource": "s3a://jobs/python/01_smoke_test.py",
+          "conf": {},
+          "args": []
+        }
+      },
+      "curl": "curl -s -X POST http://localhost:10099/api/v1/batches \\\n  -u anji: -H 'Content-Type: application/json' \\\n  -d @- <<'JSON'\n{\n  \"batchType\": \"SPARK\",\n  \"name\": \"py-smoke\",\n  \"className\": \"org.apache.spark.deploy.PythonRunner\",\n  \"resource\": \"s3a://jobs/python/01_smoke_test.py\",\n  \"conf\": {},\n  \"args\": []\n}\nJSON",
+      "kyuubi_ctl_yaml": "apiVersion: v1\nusername: anji\nrequest:\n  batchType: SPARK\n  name: py-smoke\n  resource: s3a://jobs/python/01_smoke_test.py\n  className: org.apache.spark.deploy.PythonRunner\n  args:\n    []\n  configs:\n    {}\noptions:\n  verbose: true"
+    },
+    {
+      "name": "py-upload",
+      "group": "core",
+      "kind": "batch",
+      "description": "same script, uploaded by the client instead of read from RustFS",
+      "in_test_suite": true,
+      "success_marker": "SMOKE TEST OK",
+      "expected_state": "FINISHED",
+      "connectors": "",
+      "cli": "python client/kyuubi_submit.py --url http://localhost:10099 submit jobs/python/01_smoke_test.py --name py-upload",
+      "rest": {
+        "method": "POST",
+        "url": "http://localhost:10099/api/v1/batches",
+        "content_type": "multipart/form-data",
+        "body": {
+          "batchType": "SPARK",
+          "name": "py-upload",
+          "className": "org.apache.spark.deploy.PythonRunner",
+          "resource": "01_smoke_test.py",
+          "conf": {},
+          "args": []
+        },
+        "multipart_parts": [
+          {
+            "field": "batchRequest",
+            "content": "the JSON body above"
+          },
+          {
+            "field": "resourceFile",
+            "file": "jobs/python/01_smoke_test.py"
+          }
+        ]
+      },
+      "curl": "cat > /tmp/batch-request.json <<'JSON'\n{\n  \"batchType\": \"SPARK\",\n  \"name\": \"py-upload\",\n  \"className\": \"org.apache.spark.deploy.PythonRunner\",\n  \"resource\": \"01_smoke_test.py\",\n  \"conf\": {},\n  \"args\": []\n}\nJSON\ncurl -s -X POST http://localhost:10099/api/v1/batches -u anji: \\\n  -F 'batchRequest=</tmp/batch-request.json;type=application/json' \\\n  -F 'resourceFile=@jobs/python/01_smoke_test.py'"
+    },
+    {
+      "name": "py-wordcount",
+      "group": "core",
+      "kind": "batch",
+      "description": "reads and writes RustFS through s3a",
+      "in_test_suite": true,
+      "success_marker": "WORDCOUNT OK",
+      "expected_state": "FINISHED",
+      "connectors": "",
+      "cli": "python client/kyuubi_submit.py --url http://localhost:10099 submit s3a://jobs/python/02_wordcount_s3.py --remote --name py-wordcount -- s3a://data/input/sample.txt s3a://data/output/wordcount_py",
+      "rest": {
+        "method": "POST",
+        "url": "http://localhost:10099/api/v1/batches",
+        "content_type": "application/json",
+        "body": {
+          "batchType": "SPARK",
+          "name": "py-wordcount",
+          "className": "org.apache.spark.deploy.PythonRunner",
+          "resource": "s3a://jobs/python/02_wordcount_s3.py",
+          "conf": {},
+          "args": [
+            "s3a://data/input/sample.txt",
+            "s3a://data/output/wordcount_py"
+          ]
+        }
+      },
+      "curl": "curl -s -X POST http://localhost:10099/api/v1/batches \\\n  -u anji: -H 'Content-Type: application/json' \\\n  -d @- <<'JSON'\n{\n  \"batchType\": \"SPARK\",\n  \"name\": \"py-wordcount\",\n  \"className\": \"org.apache.spark.deploy.PythonRunner\",\n  \"resource\": \"s3a://jobs/python/02_wordcount_s3.py\",\n  \"conf\": {},\n  \"args\": [\n    \"s3a://data/input/sample.txt\",\n    \"s3a://data/output/wordcount_py\"\n  ]\n}\nJSON",
+      "kyuubi_ctl_yaml": "apiVersion: v1\nusername: anji\nrequest:\n  batchType: SPARK\n  name: py-wordcount\n  resource: s3a://jobs/python/02_wordcount_s3.py\n  className: org.apache.spark.deploy.PythonRunner\n  args:\n    - \"s3a://data/input/sample.txt\"\n    - \"s3a://data/output/wordcount_py\"\n  configs:\n    {}\noptions:\n  verbose: true"
+    },
+    {
+      "name": "py-hive-etl",
+      "group": "core",
+      "kind": "batch",
+      "description": "CSV on RustFS -> Hive table demo.orders (metastore + warehouse)",
+      "in_test_suite": true,
+      "success_marker": "HIVE ETL OK",
+      "expected_state": "FINISHED",
+      "connectors": "",
+      "cli": "python client/kyuubi_submit.py --url http://localhost:10099 submit s3a://jobs/python/03_hive_etl.py --remote --name py-hive-etl -- s3a://data/input/orders.csv",
+      "rest": {
+        "method": "POST",
+        "url": "http://localhost:10099/api/v1/batches",
+        "content_type": "application/json",
+        "body": {
+          "batchType": "SPARK",
+          "name": "py-hive-etl",
+          "className": "org.apache.spark.deploy.PythonRunner",
+          "resource": "s3a://jobs/python/03_hive_etl.py",
+          "conf": {},
+          "args": [
+            "s3a://data/input/orders.csv"
+          ]
+        }
+      },
+      "curl": "curl -s -X POST http://localhost:10099/api/v1/batches \\\n  -u anji: -H 'Content-Type: application/json' \\\n  -d @- <<'JSON'\n{\n  \"batchType\": \"SPARK\",\n  \"name\": \"py-hive-etl\",\n  \"className\": \"org.apache.spark.deploy.PythonRunner\",\n  \"resource\": \"s3a://jobs/python/03_hive_etl.py\",\n  \"conf\": {},\n  \"args\": [\n    \"s3a://data/input/orders.csv\"\n  ]\n}\nJSON",
+      "kyuubi_ctl_yaml": "apiVersion: v1\nusername: anji\nrequest:\n  batchType: SPARK\n  name: py-hive-etl\n  resource: s3a://jobs/python/03_hive_etl.py\n  className: org.apache.spark.deploy.PythonRunner\n  args:\n    - \"s3a://data/input/orders.csv\"\n  configs:\n    {}\noptions:\n  verbose: true"
+    },
+    {
+      "name": "py-pyfiles",
+      "group": "core",
+      "kind": "batch",
+      "description": "--py-files zip from RustFS, imported on executors",
+      "in_test_suite": true,
+      "success_marker": "PYFILES OK",
+      "expected_state": "FINISHED",
+      "connectors": "",
+      "cli": "python client/kyuubi_submit.py --url http://localhost:10099 submit s3a://jobs/python/04_pyfiles_demo.py --remote --py-files s3a://jobs/python/libs/text_utils.zip --name py-pyfiles -- s3a://data/input/sample.txt",
+      "rest": {
+        "method": "POST",
+        "url": "http://localhost:10099/api/v1/batches",
+        "content_type": "application/json",
+        "body": {
+          "batchType": "SPARK",
+          "name": "py-pyfiles",
+          "className": "org.apache.spark.deploy.PythonRunner",
+          "resource": "s3a://jobs/python/04_pyfiles_demo.py",
+          "conf": {
+            "spark.submit.pyFiles": "s3a://jobs/python/libs/text_utils.zip"
+          },
+          "args": [
+            "s3a://data/input/sample.txt"
+          ]
+        }
+      },
+      "curl": "curl -s -X POST http://localhost:10099/api/v1/batches \\\n  -u anji: -H 'Content-Type: application/json' \\\n  -d @- <<'JSON'\n{\n  \"batchType\": \"SPARK\",\n  \"name\": \"py-pyfiles\",\n  \"className\": \"org.apache.spark.deploy.PythonRunner\",\n  \"resource\": \"s3a://jobs/python/04_pyfiles_demo.py\",\n  \"conf\": {\n    \"spark.submit.pyFiles\": \"s3a://jobs/python/libs/text_utils.zip\"\n  },\n  \"args\": [\n    \"s3a://data/input/sample.txt\"\n  ]\n}\nJSON",
+      "kyuubi_ctl_yaml": "apiVersion: v1\nusername: anji\nrequest:\n  batchType: SPARK\n  name: py-pyfiles\n  resource: s3a://jobs/python/04_pyfiles_demo.py\n  className: org.apache.spark.deploy.PythonRunner\n  args:\n    - \"s3a://data/input/sample.txt\"\n  configs:\n    spark.submit.pyFiles: \"s3a://jobs/python/libs/text_utils.zip\"\noptions:\n  verbose: true"
+    },
+    {
+      "name": "py-conf-args",
+      "group": "core",
+      "kind": "batch",
+      "description": "per-job Spark conf and app args reach the driver",
+      "in_test_suite": true,
+      "success_marker": "CONF AND ARGS OK",
+      "expected_state": "FINISHED",
+      "connectors": "",
+      "cli": "python client/kyuubi_submit.py --url http://localhost:10099 submit s3a://jobs/python/06_conf_and_args.py --remote --conf spark.executor.memory=768m --conf spark.app.custom.team=data-eng --name py-conf-args -- --run-date 2026-10-15 --env lab",
+      "rest": {
+        "method": "POST",
+        "url": "http://localhost:10099/api/v1/batches",
+        "content_type": "application/json",
+        "body": {
+          "batchType": "SPARK",
+          "name": "py-conf-args",
+          "className": "org.apache.spark.deploy.PythonRunner",
+          "resource": "s3a://jobs/python/06_conf_and_args.py",
+          "conf": {
+            "spark.executor.memory": "768m",
+            "spark.app.custom.team": "data-eng"
+          },
+          "args": [
+            "--run-date",
+            "2026-10-15",
+            "--env",
+            "lab"
+          ]
+        }
+      },
+      "curl": "curl -s -X POST http://localhost:10099/api/v1/batches \\\n  -u anji: -H 'Content-Type: application/json' \\\n  -d @- <<'JSON'\n{\n  \"batchType\": \"SPARK\",\n  \"name\": \"py-conf-args\",\n  \"className\": \"org.apache.spark.deploy.PythonRunner\",\n  \"resource\": \"s3a://jobs/python/06_conf_and_args.py\",\n  \"conf\": {\n    \"spark.executor.memory\": \"768m\",\n    \"spark.app.custom.team\": \"data-eng\"\n  },\n  \"args\": [\n    \"--run-date\",\n    \"2026-10-15\",\n    \"--env\",\n    \"lab\"\n  ]\n}\nJSON",
+      "kyuubi_ctl_yaml": "apiVersion: v1\nusername: anji\nrequest:\n  batchType: SPARK\n  name: py-conf-args\n  resource: s3a://jobs/python/06_conf_and_args.py\n  className: org.apache.spark.deploy.PythonRunner\n  args:\n    - \"--run-date\"\n    - \"2026-10-15\"\n    - \"--env\"\n    - \"lab\"\n  configs:\n    spark.executor.memory: \"768m\"\n    spark.app.custom.team: \"data-eng\"\noptions:\n  verbose: true"
+    },
+    {
+      "name": "java-wordcount",
+      "group": "core",
+      "kind": "batch",
+      "description": "Java class from the built jar",
+      "in_test_suite": true,
+      "needs": "built jar (make jars && make upload)",
+      "success_marker": "JAVA WORDCOUNT OK",
+      "expected_state": "FINISHED",
+      "connectors": "",
+      "cli": "python client/kyuubi_submit.py --url http://localhost:10099 submit s3a://jobs/jars/spark-kyuubi-jobs.jar --remote --class com.example.JavaWordCount --name java-wordcount -- s3a://data/input/sample.txt s3a://data/output/wordcount_java",
+      "rest": {
+        "method": "POST",
+        "url": "http://localhost:10099/api/v1/batches",
+        "content_type": "application/json",
+        "body": {
+          "batchType": "SPARK",
+          "name": "java-wordcount",
+          "className": "com.example.JavaWordCount",
+          "resource": "s3a://jobs/jars/spark-kyuubi-jobs.jar",
+          "conf": {},
+          "args": [
+            "s3a://data/input/sample.txt",
+            "s3a://data/output/wordcount_java"
+          ]
+        }
+      },
+      "curl": "curl -s -X POST http://localhost:10099/api/v1/batches \\\n  -u anji: -H 'Content-Type: application/json' \\\n  -d @- <<'JSON'\n{\n  \"batchType\": \"SPARK\",\n  \"name\": \"java-wordcount\",\n  \"className\": \"com.example.JavaWordCount\",\n  \"resource\": \"s3a://jobs/jars/spark-kyuubi-jobs.jar\",\n  \"conf\": {},\n  \"args\": [\n    \"s3a://data/input/sample.txt\",\n    \"s3a://data/output/wordcount_java\"\n  ]\n}\nJSON",
+      "kyuubi_ctl_yaml": "apiVersion: v1\nusername: anji\nrequest:\n  batchType: SPARK\n  name: java-wordcount\n  resource: s3a://jobs/jars/spark-kyuubi-jobs.jar\n  className: com.example.JavaWordCount\n  args:\n    - \"s3a://data/input/sample.txt\"\n    - \"s3a://data/output/wordcount_java\"\n  configs:\n    {}\noptions:\n  verbose: true"
+    },
+    {
+      "name": "scala-sales-report",
+      "group": "core",
+      "kind": "batch",
+      "description": "Scala class reading demo.orders, writing demo.sales_summary",
+      "in_test_suite": true,
+      "run_after": [
+        "py-hive-etl"
+      ],
+      "needs": "built jar (make jars && make upload)",
+      "success_marker": "SCALA SALES REPORT OK",
+      "expected_state": "FINISHED",
+      "connectors": "",
+      "cli": "python client/kyuubi_submit.py --url http://localhost:10099 submit s3a://jobs/jars/spark-kyuubi-jobs.jar --remote --class com.example.ScalaSalesReport --name scala-sales-report",
+      "rest": {
+        "method": "POST",
+        "url": "http://localhost:10099/api/v1/batches",
+        "content_type": "application/json",
+        "body": {
+          "batchType": "SPARK",
+          "name": "scala-sales-report",
+          "className": "com.example.ScalaSalesReport",
+          "resource": "s3a://jobs/jars/spark-kyuubi-jobs.jar",
+          "conf": {},
+          "args": []
+        }
+      },
+      "curl": "curl -s -X POST http://localhost:10099/api/v1/batches \\\n  -u anji: -H 'Content-Type: application/json' \\\n  -d @- <<'JSON'\n{\n  \"batchType\": \"SPARK\",\n  \"name\": \"scala-sales-report\",\n  \"className\": \"com.example.ScalaSalesReport\",\n  \"resource\": \"s3a://jobs/jars/spark-kyuubi-jobs.jar\",\n  \"conf\": {},\n  \"args\": []\n}\nJSON",
+      "kyuubi_ctl_yaml": "apiVersion: v1\nusername: anji\nrequest:\n  batchType: SPARK\n  name: scala-sales-report\n  resource: s3a://jobs/jars/spark-kyuubi-jobs.jar\n  className: com.example.ScalaSalesReport\n  args:\n    []\n  configs:\n    {}\noptions:\n  verbose: true"
+    },
+    {
+      "name": "py-expected-failure",
+      "group": "core",
+      "kind": "batch",
+      "description": "job raises on purpose; Kyuubi must report ERROR, not FINISHED",
+      "in_test_suite": true,
+      "expected_state": "ERROR",
+      "connectors": "",
+      "cli": "python client/kyuubi_submit.py --url http://localhost:10099 submit s3a://jobs/python/05_expected_failure.py --remote --name py-expected-failure",
+      "rest": {
+        "method": "POST",
+        "url": "http://localhost:10099/api/v1/batches",
+        "content_type": "application/json",
+        "body": {
+          "batchType": "SPARK",
+          "name": "py-expected-failure",
+          "className": "org.apache.spark.deploy.PythonRunner",
+          "resource": "s3a://jobs/python/05_expected_failure.py",
+          "conf": {},
+          "args": []
+        }
+      },
+      "curl": "curl -s -X POST http://localhost:10099/api/v1/batches \\\n  -u anji: -H 'Content-Type: application/json' \\\n  -d @- <<'JSON'\n{\n  \"batchType\": \"SPARK\",\n  \"name\": \"py-expected-failure\",\n  \"className\": \"org.apache.spark.deploy.PythonRunner\",\n  \"resource\": \"s3a://jobs/python/05_expected_failure.py\",\n  \"conf\": {},\n  \"args\": []\n}\nJSON",
+      "kyuubi_ctl_yaml": "apiVersion: v1\nusername: anji\nrequest:\n  batchType: SPARK\n  name: py-expected-failure\n  resource: s3a://jobs/python/05_expected_failure.py\n  className: org.apache.spark.deploy.PythonRunner\n  args:\n    []\n  configs:\n    {}\noptions:\n  verbose: true"
+    },
+    {
+      "name": "formats",
+      "group": "formats",
+      "kind": "batch",
+      "description": "CSV->Parquet->ORC->JSON->Avro->CSV, round trip must be identical",
+      "in_test_suite": true,
+      "success_marker": "FORMAT CONVERSIONS OK",
+      "expected_state": "FINISHED",
+      "connectors": "",
+      "cli": "python client/kyuubi_submit.py --url http://localhost:10099 submit s3a://jobs/python/10_format_conversions.py --remote --name formats",
+      "rest": {
+        "method": "POST",
+        "url": "http://localhost:10099/api/v1/batches",
+        "content_type": "application/json",
+        "body": {
+          "batchType": "SPARK",
+          "name": "formats",
+          "className": "org.apache.spark.deploy.PythonRunner",
+          "resource": "s3a://jobs/python/10_format_conversions.py",
+          "conf": {},
+          "args": []
+        }
+      },
+      "curl": "curl -s -X POST http://localhost:10099/api/v1/batches \\\n  -u anji: -H 'Content-Type: application/json' \\\n  -d @- <<'JSON'\n{\n  \"batchType\": \"SPARK\",\n  \"name\": \"formats\",\n  \"className\": \"org.apache.spark.deploy.PythonRunner\",\n  \"resource\": \"s3a://jobs/python/10_format_conversions.py\",\n  \"conf\": {},\n  \"args\": []\n}\nJSON",
+      "kyuubi_ctl_yaml": "apiVersion: v1\nusername: anji\nrequest:\n  batchType: SPARK\n  name: formats\n  resource: s3a://jobs/python/10_format_conversions.py\n  className: org.apache.spark.deploy.PythonRunner\n  args:\n    []\n  configs:\n    {}\noptions:\n  verbose: true"
+    },
+    {
+      "name": "pg-file-to-pg",
+      "group": "postgres",
+      "kind": "batch",
+      "description": "Parquet on RustFS -> Postgres orders (JDBC write)",
+      "in_test_suite": true,
+      "success_marker": "FILE TO POSTGRES OK",
+      "expected_state": "FINISHED",
+      "connectors": "",
+      "cli": "python client/kyuubi_submit.py --url http://localhost:10099 submit s3a://jobs/python/11_file_to_postgres.py --remote --name pg-file-to-pg",
+      "rest": {
+        "method": "POST",
+        "url": "http://localhost:10099/api/v1/batches",
+        "content_type": "application/json",
+        "body": {
+          "batchType": "SPARK",
+          "name": "pg-file-to-pg",
+          "className": "org.apache.spark.deploy.PythonRunner",
+          "resource": "s3a://jobs/python/11_file_to_postgres.py",
+          "conf": {},
+          "args": []
+        }
+      },
+      "curl": "curl -s -X POST http://localhost:10099/api/v1/batches \\\n  -u anji: -H 'Content-Type: application/json' \\\n  -d @- <<'JSON'\n{\n  \"batchType\": \"SPARK\",\n  \"name\": \"pg-file-to-pg\",\n  \"className\": \"org.apache.spark.deploy.PythonRunner\",\n  \"resource\": \"s3a://jobs/python/11_file_to_postgres.py\",\n  \"conf\": {},\n  \"args\": []\n}\nJSON",
+      "kyuubi_ctl_yaml": "apiVersion: v1\nusername: anji\nrequest:\n  batchType: SPARK\n  name: pg-file-to-pg\n  resource: s3a://jobs/python/11_file_to_postgres.py\n  className: org.apache.spark.deploy.PythonRunner\n  args:\n    []\n  configs:\n    {}\noptions:\n  verbose: true"
+    },
+    {
+      "name": "pg-pg-to-files",
+      "group": "postgres",
+      "kind": "batch",
+      "description": "Postgres (parallel + pushdown reads) -> Parquet/ORC/CSV",
+      "in_test_suite": true,
+      "run_after": [
+        "pg-file-to-pg"
+      ],
+      "success_marker": "POSTGRES TO FILES OK",
+      "expected_state": "FINISHED",
+      "connectors": "",
+      "cli": "python client/kyuubi_submit.py --url http://localhost:10099 submit s3a://jobs/python/12_postgres_to_files.py --remote --name pg-pg-to-files",
+      "rest": {
+        "method": "POST",
+        "url": "http://localhost:10099/api/v1/batches",
+        "content_type": "application/json",
+        "body": {
+          "batchType": "SPARK",
+          "name": "pg-pg-to-files",
+          "className": "org.apache.spark.deploy.PythonRunner",
+          "resource": "s3a://jobs/python/12_postgres_to_files.py",
+          "conf": {},
+          "args": []
+        }
+      },
+      "curl": "curl -s -X POST http://localhost:10099/api/v1/batches \\\n  -u anji: -H 'Content-Type: application/json' \\\n  -d @- <<'JSON'\n{\n  \"batchType\": \"SPARK\",\n  \"name\": \"pg-pg-to-files\",\n  \"className\": \"org.apache.spark.deploy.PythonRunner\",\n  \"resource\": \"s3a://jobs/python/12_postgres_to_files.py\",\n  \"conf\": {},\n  \"args\": []\n}\nJSON",
+      "kyuubi_ctl_yaml": "apiVersion: v1\nusername: anji\nrequest:\n  batchType: SPARK\n  name: pg-pg-to-files\n  resource: s3a://jobs/python/12_postgres_to_files.py\n  className: org.apache.spark.deploy.PythonRunner\n  args:\n    []\n  configs:\n    {}\noptions:\n  verbose: true"
+    },
+    {
+      "name": "pg-pg-to-pg",
+      "group": "postgres",
+      "kind": "batch",
+      "description": "Postgres -> Postgres: full refresh + idempotent upsert",
+      "in_test_suite": true,
+      "run_after": [
+        "pg-file-to-pg"
+      ],
+      "success_marker": "POSTGRES TO POSTGRES OK",
+      "expected_state": "FINISHED",
+      "connectors": "",
+      "cli": "python client/kyuubi_submit.py --url http://localhost:10099 submit s3a://jobs/python/13_postgres_to_postgres.py --remote --name pg-pg-to-pg",
+      "rest": {
+        "method": "POST",
+        "url": "http://localhost:10099/api/v1/batches",
+        "content_type": "application/json",
+        "body": {
+          "batchType": "SPARK",
+          "name": "pg-pg-to-pg",
+          "className": "org.apache.spark.deploy.PythonRunner",
+          "resource": "s3a://jobs/python/13_postgres_to_postgres.py",
+          "conf": {},
+          "args": []
+        }
+      },
+      "curl": "curl -s -X POST http://localhost:10099/api/v1/batches \\\n  -u anji: -H 'Content-Type: application/json' \\\n  -d @- <<'JSON'\n{\n  \"batchType\": \"SPARK\",\n  \"name\": \"pg-pg-to-pg\",\n  \"className\": \"org.apache.spark.deploy.PythonRunner\",\n  \"resource\": \"s3a://jobs/python/13_postgres_to_postgres.py\",\n  \"conf\": {},\n  \"args\": []\n}\nJSON",
+      "kyuubi_ctl_yaml": "apiVersion: v1\nusername: anji\nrequest:\n  batchType: SPARK\n  name: pg-pg-to-pg\n  resource: s3a://jobs/python/13_postgres_to_postgres.py\n  className: org.apache.spark.deploy.PythonRunner\n  args:\n    []\n  configs:\n    {}\noptions:\n  verbose: true"
+    },
+    {
+      "name": "iceberg",
+      "group": "lakehouse",
+      "kind": "batch",
+      "description": "Iceberg in Hive Metastore: MERGE, DELETE, schema+partition evolution, time travel",
+      "in_test_suite": true,
+      "success_marker": "ICEBERG DEMO OK",
+      "expected_state": "FINISHED",
+      "connectors": "iceberg",
+      "cli": "python client/kyuubi_submit.py --url http://localhost:10099 submit s3a://jobs/python/14_iceberg_demo.py --remote --with iceberg --name iceberg",
+      "rest": {
+        "method": "POST",
+        "url": "http://localhost:10099/api/v1/batches",
+        "content_type": "application/json",
+        "body": {
+          "batchType": "SPARK",
+          "name": "iceberg",
+          "className": "org.apache.spark.deploy.PythonRunner",
+          "resource": "s3a://jobs/python/14_iceberg_demo.py",
+          "conf": {
+            "spark.driver.extraClassPath": "/opt/lakehouse/iceberg/*",
+            "spark.executor.extraClassPath": "/opt/lakehouse/iceberg/*",
+            "spark.sql.extensions": "org.apache.iceberg.spark.extensions.IcebergSparkSessionExtensions",
+            "spark.sql.catalog.ice": "org.apache.iceberg.spark.SparkCatalog",
+            "spark.sql.catalog.ice.type": "hive",
+            "spark.sql.catalog.ice.uri": "thrift://hive-metastore:9083",
+            "spark.sql.catalog.ice.warehouse": "s3a://warehouse/iceberg"
+          },
+          "args": []
+        }
+      },
+      "curl": "curl -s -X POST http://localhost:10099/api/v1/batches \\\n  -u anji: -H 'Content-Type: application/json' \\\n  -d @- <<'JSON'\n{\n  \"batchType\": \"SPARK\",\n  \"name\": \"iceberg\",\n  \"className\": \"org.apache.spark.deploy.PythonRunner\",\n  \"resource\": \"s3a://jobs/python/14_iceberg_demo.py\",\n  \"conf\": {\n    \"spark.driver.extraClassPath\": \"/opt/lakehouse/iceberg/*\",\n    \"spark.executor.extraClassPath\": \"/opt/lakehouse/iceberg/*\",\n    \"spark.sql.extensions\": \"org.apache.iceberg.spark.extensions.IcebergSparkSessionExtensions\",\n    \"spark.sql.catalog.ice\": \"org.apache.iceberg.spark.SparkCatalog\",\n    \"spark.sql.catalog.ice.type\": \"hive\",\n    \"spark.sql.catalog.ice.uri\": \"thrift://hive-metastore:9083\",\n    \"spark.sql.catalog.ice.warehouse\": \"s3a://warehouse/iceberg\"\n  },\n  \"args\": []\n}\nJSON",
+      "kyuubi_ctl_yaml": "apiVersion: v1\nusername: anji\nrequest:\n  batchType: SPARK\n  name: iceberg\n  resource: s3a://jobs/python/14_iceberg_demo.py\n  className: org.apache.spark.deploy.PythonRunner\n  args:\n    []\n  configs:\n    spark.driver.extraClassPath: \"/opt/lakehouse/iceberg/*\"\n    spark.executor.extraClassPath: \"/opt/lakehouse/iceberg/*\"\n    spark.sql.extensions: \"org.apache.iceberg.spark.extensions.IcebergSparkSessionExtensions\"\n    spark.sql.catalog.ice: \"org.apache.iceberg.spark.SparkCatalog\"\n    spark.sql.catalog.ice.type: \"hive\"\n    spark.sql.catalog.ice.uri: \"thrift://hive-metastore:9083\"\n    spark.sql.catalog.ice.warehouse: \"s3a://warehouse/iceberg\"\noptions:\n  verbose: true"
+    },
+    {
+      "name": "delta",
+      "group": "lakehouse",
+      "kind": "batch",
+      "description": "Delta: MERGE, DML, mergeSchema, time travel, change data feed, OPTIMIZE",
+      "in_test_suite": true,
+      "success_marker": "DELTA DEMO OK",
+      "expected_state": "FINISHED",
+      "connectors": "delta",
+      "cli": "python client/kyuubi_submit.py --url http://localhost:10099 submit s3a://jobs/python/15_delta_demo.py --remote --with delta --name delta",
+      "rest": {
+        "method": "POST",
+        "url": "http://localhost:10099/api/v1/batches",
+        "content_type": "application/json",
+        "body": {
+          "batchType": "SPARK",
+          "name": "delta",
+          "className": "org.apache.spark.deploy.PythonRunner",
+          "resource": "s3a://jobs/python/15_delta_demo.py",
+          "conf": {
+            "spark.driver.extraClassPath": "/opt/lakehouse/delta/*",
+            "spark.executor.extraClassPath": "/opt/lakehouse/delta/*",
+            "spark.sql.extensions": "io.delta.sql.DeltaSparkSessionExtension",
+            "spark.sql.catalog.spark_catalog": "org.apache.spark.sql.delta.catalog.DeltaCatalog"
+          },
+          "args": []
+        }
+      },
+      "curl": "curl -s -X POST http://localhost:10099/api/v1/batches \\\n  -u anji: -H 'Content-Type: application/json' \\\n  -d @- <<'JSON'\n{\n  \"batchType\": \"SPARK\",\n  \"name\": \"delta\",\n  \"className\": \"org.apache.spark.deploy.PythonRunner\",\n  \"resource\": \"s3a://jobs/python/15_delta_demo.py\",\n  \"conf\": {\n    \"spark.driver.extraClassPath\": \"/opt/lakehouse/delta/*\",\n    \"spark.executor.extraClassPath\": \"/opt/lakehouse/delta/*\",\n    \"spark.sql.extensions\": \"io.delta.sql.DeltaSparkSessionExtension\",\n    \"spark.sql.catalog.spark_catalog\": \"org.apache.spark.sql.delta.catalog.DeltaCatalog\"\n  },\n  \"args\": []\n}\nJSON",
+      "kyuubi_ctl_yaml": "apiVersion: v1\nusername: anji\nrequest:\n  batchType: SPARK\n  name: delta\n  resource: s3a://jobs/python/15_delta_demo.py\n  className: org.apache.spark.deploy.PythonRunner\n  args:\n    []\n  configs:\n    spark.driver.extraClassPath: \"/opt/lakehouse/delta/*\"\n    spark.executor.extraClassPath: \"/opt/lakehouse/delta/*\"\n    spark.sql.extensions: \"io.delta.sql.DeltaSparkSessionExtension\"\n    spark.sql.catalog.spark_catalog: \"org.apache.spark.sql.delta.catalog.DeltaCatalog\"\noptions:\n  verbose: true"
+    },
+    {
+      "name": "hudi",
+      "group": "lakehouse",
+      "kind": "batch",
+      "description": "Hudi COW: insert, upsert, delete, incremental query, time travel",
+      "in_test_suite": true,
+      "success_marker": "HUDI DEMO OK",
+      "expected_state": "FINISHED",
+      "connectors": "hudi",
+      "cli": "python client/kyuubi_submit.py --url http://localhost:10099 submit s3a://jobs/python/16_hudi_demo.py --remote --with hudi --name hudi",
+      "rest": {
+        "method": "POST",
+        "url": "http://localhost:10099/api/v1/batches",
+        "content_type": "application/json",
+        "body": {
+          "batchType": "SPARK",
+          "name": "hudi",
+          "className": "org.apache.spark.deploy.PythonRunner",
+          "resource": "s3a://jobs/python/16_hudi_demo.py",
+          "conf": {
+            "spark.driver.extraClassPath": "/opt/lakehouse/hudi/*",
+            "spark.executor.extraClassPath": "/opt/lakehouse/hudi/*",
+            "spark.sql.extensions": "org.apache.spark.sql.hudi.HoodieSparkSessionExtension",
+            "spark.serializer": "org.apache.spark.serializer.KryoSerializer",
+            "spark.kryo.registrator": "org.apache.spark.HoodieSparkKryoRegistrar",
+            "spark.sql.catalog.spark_catalog": "org.apache.spark.sql.hudi.catalog.HoodieCatalog"
+          },
+          "args": []
+        }
+      },
+      "curl": "curl -s -X POST http://localhost:10099/api/v1/batches \\\n  -u anji: -H 'Content-Type: application/json' \\\n  -d @- <<'JSON'\n{\n  \"batchType\": \"SPARK\",\n  \"name\": \"hudi\",\n  \"className\": \"org.apache.spark.deploy.PythonRunner\",\n  \"resource\": \"s3a://jobs/python/16_hudi_demo.py\",\n  \"conf\": {\n    \"spark.driver.extraClassPath\": \"/opt/lakehouse/hudi/*\",\n    \"spark.executor.extraClassPath\": \"/opt/lakehouse/hudi/*\",\n    \"spark.sql.extensions\": \"org.apache.spark.sql.hudi.HoodieSparkSessionExtension\",\n    \"spark.serializer\": \"org.apache.spark.serializer.KryoSerializer\",\n    \"spark.kryo.registrator\": \"org.apache.spark.HoodieSparkKryoRegistrar\",\n    \"spark.sql.catalog.spark_catalog\": \"org.apache.spark.sql.hudi.catalog.HoodieCatalog\"\n  },\n  \"args\": []\n}\nJSON",
+      "kyuubi_ctl_yaml": "apiVersion: v1\nusername: anji\nrequest:\n  batchType: SPARK\n  name: hudi\n  resource: s3a://jobs/python/16_hudi_demo.py\n  className: org.apache.spark.deploy.PythonRunner\n  args:\n    []\n  configs:\n    spark.driver.extraClassPath: \"/opt/lakehouse/hudi/*\"\n    spark.executor.extraClassPath: \"/opt/lakehouse/hudi/*\"\n    spark.sql.extensions: \"org.apache.spark.sql.hudi.HoodieSparkSessionExtension\"\n    spark.serializer: \"org.apache.spark.serializer.KryoSerializer\"\n    spark.kryo.registrator: \"org.apache.spark.HoodieSparkKryoRegistrar\"\n    spark.sql.catalog.spark_catalog: \"org.apache.spark.sql.hudi.catalog.HoodieCatalog\"\noptions:\n  verbose: true"
+    },
+    {
+      "name": "orders-wave1",
+      "group": "orders",
+      "kind": "batch",
+      "description": "generate wave 1 of order events (resets earlier runs)",
+      "in_test_suite": true,
+      "success_marker": "ORDER EVENTS WAVE OK",
+      "expected_state": "FINISHED",
+      "connectors": "",
+      "cli": "python client/kyuubi_submit.py --url http://localhost:10099 submit s3a://jobs/python/order_tracking/20_generate_order_events.py --remote --name orders-wave1 -- --wave 1 --reset",
+      "rest": {
+        "method": "POST",
+        "url": "http://localhost:10099/api/v1/batches",
+        "content_type": "application/json",
+        "body": {
+          "batchType": "SPARK",
+          "name": "orders-wave1",
+          "className": "org.apache.spark.deploy.PythonRunner",
+          "resource": "s3a://jobs/python/order_tracking/20_generate_order_events.py",
+          "conf": {},
+          "args": [
+            "--wave",
+            "1",
+            "--reset"
+          ]
+        }
+      },
+      "curl": "curl -s -X POST http://localhost:10099/api/v1/batches \\\n  -u anji: -H 'Content-Type: application/json' \\\n  -d @- <<'JSON'\n{\n  \"batchType\": \"SPARK\",\n  \"name\": \"orders-wave1\",\n  \"className\": \"org.apache.spark.deploy.PythonRunner\",\n  \"resource\": \"s3a://jobs/python/order_tracking/20_generate_order_events.py\",\n  \"conf\": {},\n  \"args\": [\n    \"--wave\",\n    \"1\",\n    \"--reset\"\n  ]\n}\nJSON",
+      "kyuubi_ctl_yaml": "apiVersion: v1\nusername: anji\nrequest:\n  batchType: SPARK\n  name: orders-wave1\n  resource: s3a://jobs/python/order_tracking/20_generate_order_events.py\n  className: org.apache.spark.deploy.PythonRunner\n  args:\n    - \"--wave\"\n    - \"1\"\n    - \"--reset\"\n  configs:\n    {}\noptions:\n  verbose: true"
+    },
+    {
+      "name": "orders-stream1",
+      "group": "orders",
+      "kind": "batch",
+      "description": "stream wave 1 -> Iceberg log, Delta status, Postgres (fresh start)",
+      "in_test_suite": true,
+      "run_after": [
+        "orders-wave1"
+      ],
+      "success_marker": "ORDER TRACKING STREAM OK",
+      "expected_state": "FINISHED",
+      "connectors": "delta,iceberg",
+      "cli": "python client/kyuubi_submit.py --url http://localhost:10099 submit s3a://jobs/python/order_tracking/21_track_orders_stream.py --remote --with delta,iceberg --name orders-stream1 -- --reset",
+      "rest": {
+        "method": "POST",
+        "url": "http://localhost:10099/api/v1/batches",
+        "content_type": "application/json",
+        "body": {
+          "batchType": "SPARK",
+          "name": "orders-stream1",
+          "className": "org.apache.spark.deploy.PythonRunner",
+          "resource": "s3a://jobs/python/order_tracking/21_track_orders_stream.py",
+          "conf": {
+            "spark.driver.extraClassPath": "/opt/lakehouse/delta/*:/opt/lakehouse/iceberg/*",
+            "spark.executor.extraClassPath": "/opt/lakehouse/delta/*:/opt/lakehouse/iceberg/*",
+            "spark.sql.extensions": "io.delta.sql.DeltaSparkSessionExtension,org.apache.iceberg.spark.extensions.IcebergSparkSessionExtensions",
+            "spark.sql.catalog.spark_catalog": "org.apache.spark.sql.delta.catalog.DeltaCatalog",
+            "spark.sql.catalog.ice": "org.apache.iceberg.spark.SparkCatalog",
+            "spark.sql.catalog.ice.type": "hive",
+            "spark.sql.catalog.ice.uri": "thrift://hive-metastore:9083",
+            "spark.sql.catalog.ice.warehouse": "s3a://warehouse/iceberg"
+          },
+          "args": [
+            "--reset"
+          ]
+        }
+      },
+      "curl": "curl -s -X POST http://localhost:10099/api/v1/batches \\\n  -u anji: -H 'Content-Type: application/json' \\\n  -d @- <<'JSON'\n{\n  \"batchType\": \"SPARK\",\n  \"name\": \"orders-stream1\",\n  \"className\": \"org.apache.spark.deploy.PythonRunner\",\n  \"resource\": \"s3a://jobs/python/order_tracking/21_track_orders_stream.py\",\n  \"conf\": {\n    \"spark.driver.extraClassPath\": \"/opt/lakehouse/delta/*:/opt/lakehouse/iceberg/*\",\n    \"spark.executor.extraClassPath\": \"/opt/lakehouse/delta/*:/opt/lakehouse/iceberg/*\",\n    \"spark.sql.extensions\": \"io.delta.sql.DeltaSparkSessionExtension,org.apache.iceberg.spark.extensions.IcebergSparkSessionExtensions\",\n    \"spark.sql.catalog.spark_catalog\": \"org.apache.spark.sql.delta.catalog.DeltaCatalog\",\n    \"spark.sql.catalog.ice\": \"org.apache.iceberg.spark.SparkCatalog\",\n    \"spark.sql.catalog.ice.type\": \"hive\",\n    \"spark.sql.catalog.ice.uri\": \"thrift://hive-metastore:9083\",\n    \"spark.sql.catalog.ice.warehouse\": \"s3a://warehouse/iceberg\"\n  },\n  \"args\": [\n    \"--reset\"\n  ]\n}\nJSON",
+      "kyuubi_ctl_yaml": "apiVersion: v1\nusername: anji\nrequest:\n  batchType: SPARK\n  name: orders-stream1\n  resource: s3a://jobs/python/order_tracking/21_track_orders_stream.py\n  className: org.apache.spark.deploy.PythonRunner\n  args:\n    - \"--reset\"\n  configs:\n    spark.driver.extraClassPath: \"/opt/lakehouse/delta/*:/opt/lakehouse/iceberg/*\"\n    spark.executor.extraClassPath: \"/opt/lakehouse/delta/*:/opt/lakehouse/iceberg/*\"\n    spark.sql.extensions: \"io.delta.sql.DeltaSparkSessionExtension,org.apache.iceberg.spark.extensions.IcebergSparkSessionExtensions\"\n    spark.sql.catalog.spark_catalog: \"org.apache.spark.sql.delta.catalog.DeltaCatalog\"\n    spark.sql.catalog.ice: \"org.apache.iceberg.spark.SparkCatalog\"\n    spark.sql.catalog.ice.type: \"hive\"\n    spark.sql.catalog.ice.uri: \"thrift://hive-metastore:9083\"\n    spark.sql.catalog.ice.warehouse: \"s3a://warehouse/iceberg\"\noptions:\n  verbose: true"
+    },
+    {
+      "name": "orders-wave2",
+      "group": "orders",
+      "kind": "batch",
+      "description": "generate wave 2",
+      "in_test_suite": true,
+      "run_after": [
+        "orders-stream1"
+      ],
+      "success_marker": "ORDER EVENTS WAVE OK",
+      "expected_state": "FINISHED",
+      "connectors": "",
+      "cli": "python client/kyuubi_submit.py --url http://localhost:10099 submit s3a://jobs/python/order_tracking/20_generate_order_events.py --remote --name orders-wave2 -- --wave 2",
+      "rest": {
+        "method": "POST",
+        "url": "http://localhost:10099/api/v1/batches",
+        "content_type": "application/json",
+        "body": {
+          "batchType": "SPARK",
+          "name": "orders-wave2",
+          "className": "org.apache.spark.deploy.PythonRunner",
+          "resource": "s3a://jobs/python/order_tracking/20_generate_order_events.py",
+          "conf": {},
+          "args": [
+            "--wave",
+            "2"
+          ]
+        }
+      },
+      "curl": "curl -s -X POST http://localhost:10099/api/v1/batches \\\n  -u anji: -H 'Content-Type: application/json' \\\n  -d @- <<'JSON'\n{\n  \"batchType\": \"SPARK\",\n  \"name\": \"orders-wave2\",\n  \"className\": \"org.apache.spark.deploy.PythonRunner\",\n  \"resource\": \"s3a://jobs/python/order_tracking/20_generate_order_events.py\",\n  \"conf\": {},\n  \"args\": [\n    \"--wave\",\n    \"2\"\n  ]\n}\nJSON",
+      "kyuubi_ctl_yaml": "apiVersion: v1\nusername: anji\nrequest:\n  batchType: SPARK\n  name: orders-wave2\n  resource: s3a://jobs/python/order_tracking/20_generate_order_events.py\n  className: org.apache.spark.deploy.PythonRunner\n  args:\n    - \"--wave\"\n    - \"2\"\n  configs:\n    {}\noptions:\n  verbose: true"
+    },
+    {
+      "name": "orders-stream2",
+      "group": "orders",
+      "kind": "batch",
+      "description": "stream again: only wave 2 files are new (checkpoint)",
+      "in_test_suite": true,
+      "run_after": [
+        "orders-wave2"
+      ],
+      "success_marker": "ORDER TRACKING STREAM OK",
+      "expected_state": "FINISHED",
+      "connectors": "delta,iceberg",
+      "cli": "python client/kyuubi_submit.py --url http://localhost:10099 submit s3a://jobs/python/order_tracking/21_track_orders_stream.py --remote --with delta,iceberg --name orders-stream2",
+      "rest": {
+        "method": "POST",
+        "url": "http://localhost:10099/api/v1/batches",
+        "content_type": "application/json",
+        "body": {
+          "batchType": "SPARK",
+          "name": "orders-stream2",
+          "className": "org.apache.spark.deploy.PythonRunner",
+          "resource": "s3a://jobs/python/order_tracking/21_track_orders_stream.py",
+          "conf": {
+            "spark.driver.extraClassPath": "/opt/lakehouse/delta/*:/opt/lakehouse/iceberg/*",
+            "spark.executor.extraClassPath": "/opt/lakehouse/delta/*:/opt/lakehouse/iceberg/*",
+            "spark.sql.extensions": "io.delta.sql.DeltaSparkSessionExtension,org.apache.iceberg.spark.extensions.IcebergSparkSessionExtensions",
+            "spark.sql.catalog.spark_catalog": "org.apache.spark.sql.delta.catalog.DeltaCatalog",
+            "spark.sql.catalog.ice": "org.apache.iceberg.spark.SparkCatalog",
+            "spark.sql.catalog.ice.type": "hive",
+            "spark.sql.catalog.ice.uri": "thrift://hive-metastore:9083",
+            "spark.sql.catalog.ice.warehouse": "s3a://warehouse/iceberg"
+          },
+          "args": []
+        }
+      },
+      "curl": "curl -s -X POST http://localhost:10099/api/v1/batches \\\n  -u anji: -H 'Content-Type: application/json' \\\n  -d @- <<'JSON'\n{\n  \"batchType\": \"SPARK\",\n  \"name\": \"orders-stream2\",\n  \"className\": \"org.apache.spark.deploy.PythonRunner\",\n  \"resource\": \"s3a://jobs/python/order_tracking/21_track_orders_stream.py\",\n  \"conf\": {\n    \"spark.driver.extraClassPath\": \"/opt/lakehouse/delta/*:/opt/lakehouse/iceberg/*\",\n    \"spark.executor.extraClassPath\": \"/opt/lakehouse/delta/*:/opt/lakehouse/iceberg/*\",\n    \"spark.sql.extensions\": \"io.delta.sql.DeltaSparkSessionExtension,org.apache.iceberg.spark.extensions.IcebergSparkSessionExtensions\",\n    \"spark.sql.catalog.spark_catalog\": \"org.apache.spark.sql.delta.catalog.DeltaCatalog\",\n    \"spark.sql.catalog.ice\": \"org.apache.iceberg.spark.SparkCatalog\",\n    \"spark.sql.catalog.ice.type\": \"hive\",\n    \"spark.sql.catalog.ice.uri\": \"thrift://hive-metastore:9083\",\n    \"spark.sql.catalog.ice.warehouse\": \"s3a://warehouse/iceberg\"\n  },\n  \"args\": []\n}\nJSON",
+      "kyuubi_ctl_yaml": "apiVersion: v1\nusername: anji\nrequest:\n  batchType: SPARK\n  name: orders-stream2\n  resource: s3a://jobs/python/order_tracking/21_track_orders_stream.py\n  className: org.apache.spark.deploy.PythonRunner\n  args:\n    []\n  configs:\n    spark.driver.extraClassPath: \"/opt/lakehouse/delta/*:/opt/lakehouse/iceberg/*\"\n    spark.executor.extraClassPath: \"/opt/lakehouse/delta/*:/opt/lakehouse/iceberg/*\"\n    spark.sql.extensions: \"io.delta.sql.DeltaSparkSessionExtension,org.apache.iceberg.spark.extensions.IcebergSparkSessionExtensions\"\n    spark.sql.catalog.spark_catalog: \"org.apache.spark.sql.delta.catalog.DeltaCatalog\"\n    spark.sql.catalog.ice: \"org.apache.iceberg.spark.SparkCatalog\"\n    spark.sql.catalog.ice.type: \"hive\"\n    spark.sql.catalog.ice.uri: \"thrift://hive-metastore:9083\"\n    spark.sql.catalog.ice.warehouse: \"s3a://warehouse/iceberg\"\noptions:\n  verbose: true"
+    },
+    {
+      "name": "orders-wave3",
+      "group": "orders",
+      "kind": "batch",
+      "description": "generate wave 3 (with a duplicate and a late event)",
+      "in_test_suite": true,
+      "run_after": [
+        "orders-stream2"
+      ],
+      "success_marker": "ORDER EVENTS WAVE OK",
+      "expected_state": "FINISHED",
+      "connectors": "",
+      "cli": "python client/kyuubi_submit.py --url http://localhost:10099 submit s3a://jobs/python/order_tracking/20_generate_order_events.py --remote --name orders-wave3 -- --wave 3",
+      "rest": {
+        "method": "POST",
+        "url": "http://localhost:10099/api/v1/batches",
+        "content_type": "application/json",
+        "body": {
+          "batchType": "SPARK",
+          "name": "orders-wave3",
+          "className": "org.apache.spark.deploy.PythonRunner",
+          "resource": "s3a://jobs/python/order_tracking/20_generate_order_events.py",
+          "conf": {},
+          "args": [
+            "--wave",
+            "3"
+          ]
+        }
+      },
+      "curl": "curl -s -X POST http://localhost:10099/api/v1/batches \\\n  -u anji: -H 'Content-Type: application/json' \\\n  -d @- <<'JSON'\n{\n  \"batchType\": \"SPARK\",\n  \"name\": \"orders-wave3\",\n  \"className\": \"org.apache.spark.deploy.PythonRunner\",\n  \"resource\": \"s3a://jobs/python/order_tracking/20_generate_order_events.py\",\n  \"conf\": {},\n  \"args\": [\n    \"--wave\",\n    \"3\"\n  ]\n}\nJSON",
+      "kyuubi_ctl_yaml": "apiVersion: v1\nusername: anji\nrequest:\n  batchType: SPARK\n  name: orders-wave3\n  resource: s3a://jobs/python/order_tracking/20_generate_order_events.py\n  className: org.apache.spark.deploy.PythonRunner\n  args:\n    - \"--wave\"\n    - \"3\"\n  configs:\n    {}\noptions:\n  verbose: true"
+    },
+    {
+      "name": "orders-stream3",
+      "group": "orders",
+      "kind": "batch",
+      "description": "stream wave 3",
+      "in_test_suite": true,
+      "run_after": [
+        "orders-wave3"
+      ],
+      "success_marker": "ORDER TRACKING STREAM OK",
+      "expected_state": "FINISHED",
+      "connectors": "delta,iceberg",
+      "cli": "python client/kyuubi_submit.py --url http://localhost:10099 submit s3a://jobs/python/order_tracking/21_track_orders_stream.py --remote --with delta,iceberg --name orders-stream3",
+      "rest": {
+        "method": "POST",
+        "url": "http://localhost:10099/api/v1/batches",
+        "content_type": "application/json",
+        "body": {
+          "batchType": "SPARK",
+          "name": "orders-stream3",
+          "className": "org.apache.spark.deploy.PythonRunner",
+          "resource": "s3a://jobs/python/order_tracking/21_track_orders_stream.py",
+          "conf": {
+            "spark.driver.extraClassPath": "/opt/lakehouse/delta/*:/opt/lakehouse/iceberg/*",
+            "spark.executor.extraClassPath": "/opt/lakehouse/delta/*:/opt/lakehouse/iceberg/*",
+            "spark.sql.extensions": "io.delta.sql.DeltaSparkSessionExtension,org.apache.iceberg.spark.extensions.IcebergSparkSessionExtensions",
+            "spark.sql.catalog.spark_catalog": "org.apache.spark.sql.delta.catalog.DeltaCatalog",
+            "spark.sql.catalog.ice": "org.apache.iceberg.spark.SparkCatalog",
+            "spark.sql.catalog.ice.type": "hive",
+            "spark.sql.catalog.ice.uri": "thrift://hive-metastore:9083",
+            "spark.sql.catalog.ice.warehouse": "s3a://warehouse/iceberg"
+          },
+          "args": []
+        }
+      },
+      "curl": "curl -s -X POST http://localhost:10099/api/v1/batches \\\n  -u anji: -H 'Content-Type: application/json' \\\n  -d @- <<'JSON'\n{\n  \"batchType\": \"SPARK\",\n  \"name\": \"orders-stream3\",\n  \"className\": \"org.apache.spark.deploy.PythonRunner\",\n  \"resource\": \"s3a://jobs/python/order_tracking/21_track_orders_stream.py\",\n  \"conf\": {\n    \"spark.driver.extraClassPath\": \"/opt/lakehouse/delta/*:/opt/lakehouse/iceberg/*\",\n    \"spark.executor.extraClassPath\": \"/opt/lakehouse/delta/*:/opt/lakehouse/iceberg/*\",\n    \"spark.sql.extensions\": \"io.delta.sql.DeltaSparkSessionExtension,org.apache.iceberg.spark.extensions.IcebergSparkSessionExtensions\",\n    \"spark.sql.catalog.spark_catalog\": \"org.apache.spark.sql.delta.catalog.DeltaCatalog\",\n    \"spark.sql.catalog.ice\": \"org.apache.iceberg.spark.SparkCatalog\",\n    \"spark.sql.catalog.ice.type\": \"hive\",\n    \"spark.sql.catalog.ice.uri\": \"thrift://hive-metastore:9083\",\n    \"spark.sql.catalog.ice.warehouse\": \"s3a://warehouse/iceberg\"\n  },\n  \"args\": []\n}\nJSON",
+      "kyuubi_ctl_yaml": "apiVersion: v1\nusername: anji\nrequest:\n  batchType: SPARK\n  name: orders-stream3\n  resource: s3a://jobs/python/order_tracking/21_track_orders_stream.py\n  className: org.apache.spark.deploy.PythonRunner\n  args:\n    []\n  configs:\n    spark.driver.extraClassPath: \"/opt/lakehouse/delta/*:/opt/lakehouse/iceberg/*\"\n    spark.executor.extraClassPath: \"/opt/lakehouse/delta/*:/opt/lakehouse/iceberg/*\"\n    spark.sql.extensions: \"io.delta.sql.DeltaSparkSessionExtension,org.apache.iceberg.spark.extensions.IcebergSparkSessionExtensions\"\n    spark.sql.catalog.spark_catalog: \"org.apache.spark.sql.delta.catalog.DeltaCatalog\"\n    spark.sql.catalog.ice: \"org.apache.iceberg.spark.SparkCatalog\"\n    spark.sql.catalog.ice.type: \"hive\"\n    spark.sql.catalog.ice.uri: \"thrift://hive-metastore:9083\"\n    spark.sql.catalog.ice.warehouse: \"s3a://warehouse/iceberg\"\noptions:\n  verbose: true"
+    },
+    {
+      "name": "orders-report",
+      "group": "orders",
+      "kind": "batch",
+      "description": "SLA report + check Iceberg, Delta and Postgres all agree",
+      "in_test_suite": true,
+      "run_after": [
+        "orders-stream3"
+      ],
+      "success_marker": "ORDER SLA REPORT OK",
+      "expected_state": "FINISHED",
+      "connectors": "delta,iceberg",
+      "cli": "python client/kyuubi_submit.py --url http://localhost:10099 submit s3a://jobs/python/order_tracking/22_order_sla_report.py --remote --with delta,iceberg --name orders-report",
+      "rest": {
+        "method": "POST",
+        "url": "http://localhost:10099/api/v1/batches",
+        "content_type": "application/json",
+        "body": {
+          "batchType": "SPARK",
+          "name": "orders-report",
+          "className": "org.apache.spark.deploy.PythonRunner",
+          "resource": "s3a://jobs/python/order_tracking/22_order_sla_report.py",
+          "conf": {
+            "spark.driver.extraClassPath": "/opt/lakehouse/delta/*:/opt/lakehouse/iceberg/*",
+            "spark.executor.extraClassPath": "/opt/lakehouse/delta/*:/opt/lakehouse/iceberg/*",
+            "spark.sql.extensions": "io.delta.sql.DeltaSparkSessionExtension,org.apache.iceberg.spark.extensions.IcebergSparkSessionExtensions",
+            "spark.sql.catalog.spark_catalog": "org.apache.spark.sql.delta.catalog.DeltaCatalog",
+            "spark.sql.catalog.ice": "org.apache.iceberg.spark.SparkCatalog",
+            "spark.sql.catalog.ice.type": "hive",
+            "spark.sql.catalog.ice.uri": "thrift://hive-metastore:9083",
+            "spark.sql.catalog.ice.warehouse": "s3a://warehouse/iceberg"
+          },
+          "args": []
+        }
+      },
+      "curl": "curl -s -X POST http://localhost:10099/api/v1/batches \\\n  -u anji: -H 'Content-Type: application/json' \\\n  -d @- <<'JSON'\n{\n  \"batchType\": \"SPARK\",\n  \"name\": \"orders-report\",\n  \"className\": \"org.apache.spark.deploy.PythonRunner\",\n  \"resource\": \"s3a://jobs/python/order_tracking/22_order_sla_report.py\",\n  \"conf\": {\n    \"spark.driver.extraClassPath\": \"/opt/lakehouse/delta/*:/opt/lakehouse/iceberg/*\",\n    \"spark.executor.extraClassPath\": \"/opt/lakehouse/delta/*:/opt/lakehouse/iceberg/*\",\n    \"spark.sql.extensions\": \"io.delta.sql.DeltaSparkSessionExtension,org.apache.iceberg.spark.extensions.IcebergSparkSessionExtensions\",\n    \"spark.sql.catalog.spark_catalog\": \"org.apache.spark.sql.delta.catalog.DeltaCatalog\",\n    \"spark.sql.catalog.ice\": \"org.apache.iceberg.spark.SparkCatalog\",\n    \"spark.sql.catalog.ice.type\": \"hive\",\n    \"spark.sql.catalog.ice.uri\": \"thrift://hive-metastore:9083\",\n    \"spark.sql.catalog.ice.warehouse\": \"s3a://warehouse/iceberg\"\n  },\n  \"args\": []\n}\nJSON",
+      "kyuubi_ctl_yaml": "apiVersion: v1\nusername: anji\nrequest:\n  batchType: SPARK\n  name: orders-report\n  resource: s3a://jobs/python/order_tracking/22_order_sla_report.py\n  className: org.apache.spark.deploy.PythonRunner\n  args:\n    []\n  configs:\n    spark.driver.extraClassPath: \"/opt/lakehouse/delta/*:/opt/lakehouse/iceberg/*\"\n    spark.executor.extraClassPath: \"/opt/lakehouse/delta/*:/opt/lakehouse/iceberg/*\"\n    spark.sql.extensions: \"io.delta.sql.DeltaSparkSessionExtension,org.apache.iceberg.spark.extensions.IcebergSparkSessionExtensions\"\n    spark.sql.catalog.spark_catalog: \"org.apache.spark.sql.delta.catalog.DeltaCatalog\"\n    spark.sql.catalog.ice: \"org.apache.iceberg.spark.SparkCatalog\"\n    spark.sql.catalog.ice.type: \"hive\"\n    spark.sql.catalog.ice.uri: \"thrift://hive-metastore:9083\"\n    spark.sql.catalog.ice.warehouse: \"s3a://warehouse/iceberg\"\noptions:\n  verbose: true"
+    },
+    {
+      "name": "hive-elt",
+      "group": "hive",
+      "kind": "batch",
+      "description": "Hive SQL ELT: external TEXTFILE -> ORC -> partitioned PARQUET -> RCFILE, CTAS, view, ANALYZE",
+      "in_test_suite": true,
+      "success_marker": "HIVE ELT OK",
+      "expected_state": "FINISHED",
+      "connectors": "",
+      "cli": "python client/kyuubi_submit.py --url http://localhost:10099 submit s3a://jobs/python/17_hive_elt.py --remote --name hive-elt",
+      "rest": {
+        "method": "POST",
+        "url": "http://localhost:10099/api/v1/batches",
+        "content_type": "application/json",
+        "body": {
+          "batchType": "SPARK",
+          "name": "hive-elt",
+          "className": "org.apache.spark.deploy.PythonRunner",
+          "resource": "s3a://jobs/python/17_hive_elt.py",
+          "conf": {},
+          "args": []
+        }
+      },
+      "curl": "curl -s -X POST http://localhost:10099/api/v1/batches \\\n  -u anji: -H 'Content-Type: application/json' \\\n  -d @- <<'JSON'\n{\n  \"batchType\": \"SPARK\",\n  \"name\": \"hive-elt\",\n  \"className\": \"org.apache.spark.deploy.PythonRunner\",\n  \"resource\": \"s3a://jobs/python/17_hive_elt.py\",\n  \"conf\": {},\n  \"args\": []\n}\nJSON",
+      "kyuubi_ctl_yaml": "apiVersion: v1\nusername: anji\nrequest:\n  batchType: SPARK\n  name: hive-elt\n  resource: s3a://jobs/python/17_hive_elt.py\n  className: org.apache.spark.deploy.PythonRunner\n  args:\n    []\n  configs:\n    {}\noptions:\n  verbose: true"
+    },
+    {
+      "name": "kafka-produce",
+      "group": "streaming",
+      "kind": "local",
+      "description": "Python producer app sends 40 order lifecycles to Kafka orders.events",
+      "in_test_suite": true,
+      "needs": "Kafka (make kafka-install)",
+      "success_marker": "PRODUCER OK",
+      "expected_state": "FINISHED",
+      "command_in_lab": "docker compose --profile tools run --rm kyuubi-client python client/producers/order_producer.py --orders 40 --run-id demo1",
+      "command_from_mac": "python client/producers/order_producer.py --orders 40 --run-id demo1 --bootstrap localhost:9094"
+    },
+    {
+      "name": "kafka-consumer-basic",
+      "group": "streaming",
+      "kind": "batch",
+      "description": "Kafka -> Spark consumer -> Parquet bronze (offsets + per-batch summary)",
+      "in_test_suite": true,
+      "run_after": [
+        "kafka-produce"
+      ],
+      "needs": "Kafka (make kafka-install)",
+      "success_marker": "KAFKA CONSUMER BASIC OK",
+      "expected_state": "FINISHED",
+      "connectors": "kafka",
+      "cli": "python client/kyuubi_submit.py --url http://localhost:10099 submit s3a://jobs/python/streaming/30_kafka_consumer_basic.py --remote --with kafka --py-files s3a://jobs/python/streaming/stream_common.py --name kafka-consumer-basic -- --available-now",
+      "rest": {
+        "method": "POST",
+        "url": "http://localhost:10099/api/v1/batches",
+        "content_type": "application/json",
+        "body": {
+          "batchType": "SPARK",
+          "name": "kafka-consumer-basic",
+          "className": "org.apache.spark.deploy.PythonRunner",
+          "resource": "s3a://jobs/python/streaming/30_kafka_consumer_basic.py",
+          "conf": {
+            "spark.driver.extraClassPath": "/opt/lakehouse/kafka/*",
+            "spark.executor.extraClassPath": "/opt/lakehouse/kafka/*",
+            "spark.submit.pyFiles": "s3a://jobs/python/streaming/stream_common.py"
+          },
+          "args": [
+            "--available-now"
+          ]
+        }
+      },
+      "curl": "curl -s -X POST http://localhost:10099/api/v1/batches \\\n  -u anji: -H 'Content-Type: application/json' \\\n  -d @- <<'JSON'\n{\n  \"batchType\": \"SPARK\",\n  \"name\": \"kafka-consumer-basic\",\n  \"className\": \"org.apache.spark.deploy.PythonRunner\",\n  \"resource\": \"s3a://jobs/python/streaming/30_kafka_consumer_basic.py\",\n  \"conf\": {\n    \"spark.driver.extraClassPath\": \"/opt/lakehouse/kafka/*\",\n    \"spark.executor.extraClassPath\": \"/opt/lakehouse/kafka/*\",\n    \"spark.submit.pyFiles\": \"s3a://jobs/python/streaming/stream_common.py\"\n  },\n  \"args\": [\n    \"--available-now\"\n  ]\n}\nJSON",
+      "kyuubi_ctl_yaml": "apiVersion: v1\nusername: anji\nrequest:\n  batchType: SPARK\n  name: kafka-consumer-basic\n  resource: s3a://jobs/python/streaming/30_kafka_consumer_basic.py\n  className: org.apache.spark.deploy.PythonRunner\n  args:\n    - \"--available-now\"\n  configs:\n    spark.driver.extraClassPath: \"/opt/lakehouse/kafka/*\"\n    spark.executor.extraClassPath: \"/opt/lakehouse/kafka/*\"\n    spark.submit.pyFiles: \"s3a://jobs/python/streaming/stream_common.py\"\noptions:\n  verbose: true",
+      "always_on": {
+        "note": "runs until killed; micro-batch every 10 s (--trigger-seconds N to change)",
+        "cli": "python client/kyuubi_submit.py --url http://localhost:10099 submit s3a://jobs/python/streaming/30_kafka_consumer_basic.py --remote --with kafka --py-files s3a://jobs/python/streaming/stream_common.py --name live-kafka-consumer-basic --no-wait",
+        "rest_body": {
+          "batchType": "SPARK",
+          "name": "live-kafka-consumer-basic",
+          "className": "org.apache.spark.deploy.PythonRunner",
+          "resource": "s3a://jobs/python/streaming/30_kafka_consumer_basic.py",
+          "conf": {
+            "spark.driver.extraClassPath": "/opt/lakehouse/kafka/*",
+            "spark.executor.extraClassPath": "/opt/lakehouse/kafka/*",
+            "spark.submit.pyFiles": "s3a://jobs/python/streaming/stream_common.py"
+          },
+          "args": []
+        },
+        "curl": "curl -s -X POST http://localhost:10099/api/v1/batches \\\n  -u anji: -H 'Content-Type: application/json' \\\n  -d @- <<'JSON'\n{\n  \"batchType\": \"SPARK\",\n  \"name\": \"live-kafka-consumer-basic\",\n  \"className\": \"org.apache.spark.deploy.PythonRunner\",\n  \"resource\": \"s3a://jobs/python/streaming/30_kafka_consumer_basic.py\",\n  \"conf\": {\n    \"spark.driver.extraClassPath\": \"/opt/lakehouse/kafka/*\",\n    \"spark.executor.extraClassPath\": \"/opt/lakehouse/kafka/*\",\n    \"spark.submit.pyFiles\": \"s3a://jobs/python/streaming/stream_common.py\"\n  },\n  \"args\": []\n}\nJSON",
+        "stop": "python client/kyuubi_submit.py kill <batch-id>   (or: curl -X DELETE http://localhost:10099/api/v1/batches/<batch-id>)"
+      }
+    },
+    {
+      "name": "kafka-to-delta-pg",
+      "group": "streaming",
+      "kind": "batch",
+      "description": "Kafka -> Delta event table (exactly once) + Postgres order status (upsert)",
+      "in_test_suite": true,
+      "run_after": [
+        "kafka-produce"
+      ],
+      "needs": "Kafka (make kafka-install)",
+      "success_marker": "KAFKA TO DELTA POSTGRES OK",
+      "expected_state": "FINISHED",
+      "connectors": "kafka,delta",
+      "cli": "python client/kyuubi_submit.py --url http://localhost:10099 submit s3a://jobs/python/streaming/31_kafka_to_delta_postgres.py --remote --with kafka,delta --py-files s3a://jobs/python/streaming/stream_common.py --name kafka-to-delta-pg -- --available-now",
+      "rest": {
+        "method": "POST",
+        "url": "http://localhost:10099/api/v1/batches",
+        "content_type": "application/json",
+        "body": {
+          "batchType": "SPARK",
+          "name": "kafka-to-delta-pg",
+          "className": "org.apache.spark.deploy.PythonRunner",
+          "resource": "s3a://jobs/python/streaming/31_kafka_to_delta_postgres.py",
+          "conf": {
+            "spark.driver.extraClassPath": "/opt/lakehouse/kafka/*:/opt/lakehouse/delta/*",
+            "spark.executor.extraClassPath": "/opt/lakehouse/kafka/*:/opt/lakehouse/delta/*",
+            "spark.sql.extensions": "io.delta.sql.DeltaSparkSessionExtension",
+            "spark.sql.catalog.spark_catalog": "org.apache.spark.sql.delta.catalog.DeltaCatalog",
+            "spark.submit.pyFiles": "s3a://jobs/python/streaming/stream_common.py"
+          },
+          "args": [
+            "--available-now"
+          ]
+        }
+      },
+      "curl": "curl -s -X POST http://localhost:10099/api/v1/batches \\\n  -u anji: -H 'Content-Type: application/json' \\\n  -d @- <<'JSON'\n{\n  \"batchType\": \"SPARK\",\n  \"name\": \"kafka-to-delta-pg\",\n  \"className\": \"org.apache.spark.deploy.PythonRunner\",\n  \"resource\": \"s3a://jobs/python/streaming/31_kafka_to_delta_postgres.py\",\n  \"conf\": {\n    \"spark.driver.extraClassPath\": \"/opt/lakehouse/kafka/*:/opt/lakehouse/delta/*\",\n    \"spark.executor.extraClassPath\": \"/opt/lakehouse/kafka/*:/opt/lakehouse/delta/*\",\n    \"spark.sql.extensions\": \"io.delta.sql.DeltaSparkSessionExtension\",\n    \"spark.sql.catalog.spark_catalog\": \"org.apache.spark.sql.delta.catalog.DeltaCatalog\",\n    \"spark.submit.pyFiles\": \"s3a://jobs/python/streaming/stream_common.py\"\n  },\n  \"args\": [\n    \"--available-now\"\n  ]\n}\nJSON",
+      "kyuubi_ctl_yaml": "apiVersion: v1\nusername: anji\nrequest:\n  batchType: SPARK\n  name: kafka-to-delta-pg\n  resource: s3a://jobs/python/streaming/31_kafka_to_delta_postgres.py\n  className: org.apache.spark.deploy.PythonRunner\n  args:\n    - \"--available-now\"\n  configs:\n    spark.driver.extraClassPath: \"/opt/lakehouse/kafka/*:/opt/lakehouse/delta/*\"\n    spark.executor.extraClassPath: \"/opt/lakehouse/kafka/*:/opt/lakehouse/delta/*\"\n    spark.sql.extensions: \"io.delta.sql.DeltaSparkSessionExtension\"\n    spark.sql.catalog.spark_catalog: \"org.apache.spark.sql.delta.catalog.DeltaCatalog\"\n    spark.submit.pyFiles: \"s3a://jobs/python/streaming/stream_common.py\"\noptions:\n  verbose: true",
+      "always_on": {
+        "note": "runs until killed; micro-batch every 10 s (--trigger-seconds N to change)",
+        "cli": "python client/kyuubi_submit.py --url http://localhost:10099 submit s3a://jobs/python/streaming/31_kafka_to_delta_postgres.py --remote --with kafka,delta --py-files s3a://jobs/python/streaming/stream_common.py --name live-kafka-to-delta-pg --no-wait",
+        "rest_body": {
+          "batchType": "SPARK",
+          "name": "live-kafka-to-delta-pg",
+          "className": "org.apache.spark.deploy.PythonRunner",
+          "resource": "s3a://jobs/python/streaming/31_kafka_to_delta_postgres.py",
+          "conf": {
+            "spark.driver.extraClassPath": "/opt/lakehouse/kafka/*:/opt/lakehouse/delta/*",
+            "spark.executor.extraClassPath": "/opt/lakehouse/kafka/*:/opt/lakehouse/delta/*",
+            "spark.sql.extensions": "io.delta.sql.DeltaSparkSessionExtension",
+            "spark.sql.catalog.spark_catalog": "org.apache.spark.sql.delta.catalog.DeltaCatalog",
+            "spark.submit.pyFiles": "s3a://jobs/python/streaming/stream_common.py"
+          },
+          "args": []
+        },
+        "curl": "curl -s -X POST http://localhost:10099/api/v1/batches \\\n  -u anji: -H 'Content-Type: application/json' \\\n  -d @- <<'JSON'\n{\n  \"batchType\": \"SPARK\",\n  \"name\": \"live-kafka-to-delta-pg\",\n  \"className\": \"org.apache.spark.deploy.PythonRunner\",\n  \"resource\": \"s3a://jobs/python/streaming/31_kafka_to_delta_postgres.py\",\n  \"conf\": {\n    \"spark.driver.extraClassPath\": \"/opt/lakehouse/kafka/*:/opt/lakehouse/delta/*\",\n    \"spark.executor.extraClassPath\": \"/opt/lakehouse/kafka/*:/opt/lakehouse/delta/*\",\n    \"spark.sql.extensions\": \"io.delta.sql.DeltaSparkSessionExtension\",\n    \"spark.sql.catalog.spark_catalog\": \"org.apache.spark.sql.delta.catalog.DeltaCatalog\",\n    \"spark.submit.pyFiles\": \"s3a://jobs/python/streaming/stream_common.py\"\n  },\n  \"args\": []\n}\nJSON",
+        "stop": "python client/kyuubi_submit.py kill <batch-id>   (or: curl -X DELETE http://localhost:10099/api/v1/batches/<batch-id>)"
+      }
+    },
+    {
+      "name": "kafka-enrich-publish",
+      "group": "streaming",
+      "kind": "batch",
+      "description": "Kafka -> join customers (Postgres) -> Spark publishes orders.enriched + orders.alerts",
+      "in_test_suite": true,
+      "run_after": [
+        "kafka-produce"
+      ],
+      "needs": "Kafka (make kafka-install)",
+      "success_marker": "KAFKA ENRICH PUBLISH OK",
+      "expected_state": "FINISHED",
+      "connectors": "kafka",
+      "cli": "python client/kyuubi_submit.py --url http://localhost:10099 submit s3a://jobs/python/streaming/32_kafka_enrich_publish.py --remote --with kafka --py-files s3a://jobs/python/streaming/stream_common.py --name kafka-enrich-publish -- --available-now",
+      "rest": {
+        "method": "POST",
+        "url": "http://localhost:10099/api/v1/batches",
+        "content_type": "application/json",
+        "body": {
+          "batchType": "SPARK",
+          "name": "kafka-enrich-publish",
+          "className": "org.apache.spark.deploy.PythonRunner",
+          "resource": "s3a://jobs/python/streaming/32_kafka_enrich_publish.py",
+          "conf": {
+            "spark.driver.extraClassPath": "/opt/lakehouse/kafka/*",
+            "spark.executor.extraClassPath": "/opt/lakehouse/kafka/*",
+            "spark.submit.pyFiles": "s3a://jobs/python/streaming/stream_common.py"
+          },
+          "args": [
+            "--available-now"
+          ]
+        }
+      },
+      "curl": "curl -s -X POST http://localhost:10099/api/v1/batches \\\n  -u anji: -H 'Content-Type: application/json' \\\n  -d @- <<'JSON'\n{\n  \"batchType\": \"SPARK\",\n  \"name\": \"kafka-enrich-publish\",\n  \"className\": \"org.apache.spark.deploy.PythonRunner\",\n  \"resource\": \"s3a://jobs/python/streaming/32_kafka_enrich_publish.py\",\n  \"conf\": {\n    \"spark.driver.extraClassPath\": \"/opt/lakehouse/kafka/*\",\n    \"spark.executor.extraClassPath\": \"/opt/lakehouse/kafka/*\",\n    \"spark.submit.pyFiles\": \"s3a://jobs/python/streaming/stream_common.py\"\n  },\n  \"args\": [\n    \"--available-now\"\n  ]\n}\nJSON",
+      "kyuubi_ctl_yaml": "apiVersion: v1\nusername: anji\nrequest:\n  batchType: SPARK\n  name: kafka-enrich-publish\n  resource: s3a://jobs/python/streaming/32_kafka_enrich_publish.py\n  className: org.apache.spark.deploy.PythonRunner\n  args:\n    - \"--available-now\"\n  configs:\n    spark.driver.extraClassPath: \"/opt/lakehouse/kafka/*\"\n    spark.executor.extraClassPath: \"/opt/lakehouse/kafka/*\"\n    spark.submit.pyFiles: \"s3a://jobs/python/streaming/stream_common.py\"\noptions:\n  verbose: true",
+      "always_on": {
+        "note": "runs until killed; micro-batch every 10 s (--trigger-seconds N to change)",
+        "cli": "python client/kyuubi_submit.py --url http://localhost:10099 submit s3a://jobs/python/streaming/32_kafka_enrich_publish.py --remote --with kafka --py-files s3a://jobs/python/streaming/stream_common.py --name live-kafka-enrich-publish --no-wait",
+        "rest_body": {
+          "batchType": "SPARK",
+          "name": "live-kafka-enrich-publish",
+          "className": "org.apache.spark.deploy.PythonRunner",
+          "resource": "s3a://jobs/python/streaming/32_kafka_enrich_publish.py",
+          "conf": {
+            "spark.driver.extraClassPath": "/opt/lakehouse/kafka/*",
+            "spark.executor.extraClassPath": "/opt/lakehouse/kafka/*",
+            "spark.submit.pyFiles": "s3a://jobs/python/streaming/stream_common.py"
+          },
+          "args": []
+        },
+        "curl": "curl -s -X POST http://localhost:10099/api/v1/batches \\\n  -u anji: -H 'Content-Type: application/json' \\\n  -d @- <<'JSON'\n{\n  \"batchType\": \"SPARK\",\n  \"name\": \"live-kafka-enrich-publish\",\n  \"className\": \"org.apache.spark.deploy.PythonRunner\",\n  \"resource\": \"s3a://jobs/python/streaming/32_kafka_enrich_publish.py\",\n  \"conf\": {\n    \"spark.driver.extraClassPath\": \"/opt/lakehouse/kafka/*\",\n    \"spark.executor.extraClassPath\": \"/opt/lakehouse/kafka/*\",\n    \"spark.submit.pyFiles\": \"s3a://jobs/python/streaming/stream_common.py\"\n  },\n  \"args\": []\n}\nJSON",
+        "stop": "python client/kyuubi_submit.py kill <batch-id>   (or: curl -X DELETE http://localhost:10099/api/v1/batches/<batch-id>)"
+      }
+    },
+    {
+      "name": "kafka-windowed-metrics",
+      "group": "streaming",
+      "kind": "batch",
+      "description": "event-time windows + watermark -> Spark publishes orders.metrics + Postgres upsert",
+      "in_test_suite": true,
+      "run_after": [
+        "kafka-produce"
+      ],
+      "needs": "Kafka (make kafka-install)",
+      "success_marker": "KAFKA WINDOWED METRICS OK",
+      "expected_state": "FINISHED",
+      "connectors": "kafka",
+      "cli": "python client/kyuubi_submit.py --url http://localhost:10099 submit s3a://jobs/python/streaming/33_kafka_windowed_metrics.py --remote --with kafka --py-files s3a://jobs/python/streaming/stream_common.py --name kafka-windowed-metrics -- --available-now",
+      "rest": {
+        "method": "POST",
+        "url": "http://localhost:10099/api/v1/batches",
+        "content_type": "application/json",
+        "body": {
+          "batchType": "SPARK",
+          "name": "kafka-windowed-metrics",
+          "className": "org.apache.spark.deploy.PythonRunner",
+          "resource": "s3a://jobs/python/streaming/33_kafka_windowed_metrics.py",
+          "conf": {
+            "spark.driver.extraClassPath": "/opt/lakehouse/kafka/*",
+            "spark.executor.extraClassPath": "/opt/lakehouse/kafka/*",
+            "spark.submit.pyFiles": "s3a://jobs/python/streaming/stream_common.py"
+          },
+          "args": [
+            "--available-now"
+          ]
+        }
+      },
+      "curl": "curl -s -X POST http://localhost:10099/api/v1/batches \\\n  -u anji: -H 'Content-Type: application/json' \\\n  -d @- <<'JSON'\n{\n  \"batchType\": \"SPARK\",\n  \"name\": \"kafka-windowed-metrics\",\n  \"className\": \"org.apache.spark.deploy.PythonRunner\",\n  \"resource\": \"s3a://jobs/python/streaming/33_kafka_windowed_metrics.py\",\n  \"conf\": {\n    \"spark.driver.extraClassPath\": \"/opt/lakehouse/kafka/*\",\n    \"spark.executor.extraClassPath\": \"/opt/lakehouse/kafka/*\",\n    \"spark.submit.pyFiles\": \"s3a://jobs/python/streaming/stream_common.py\"\n  },\n  \"args\": [\n    \"--available-now\"\n  ]\n}\nJSON",
+      "kyuubi_ctl_yaml": "apiVersion: v1\nusername: anji\nrequest:\n  batchType: SPARK\n  name: kafka-windowed-metrics\n  resource: s3a://jobs/python/streaming/33_kafka_windowed_metrics.py\n  className: org.apache.spark.deploy.PythonRunner\n  args:\n    - \"--available-now\"\n  configs:\n    spark.driver.extraClassPath: \"/opt/lakehouse/kafka/*\"\n    spark.executor.extraClassPath: \"/opt/lakehouse/kafka/*\"\n    spark.submit.pyFiles: \"s3a://jobs/python/streaming/stream_common.py\"\noptions:\n  verbose: true",
+      "always_on": {
+        "note": "runs until killed; micro-batch every 10 s (--trigger-seconds N to change)",
+        "cli": "python client/kyuubi_submit.py --url http://localhost:10099 submit s3a://jobs/python/streaming/33_kafka_windowed_metrics.py --remote --with kafka --py-files s3a://jobs/python/streaming/stream_common.py --name live-kafka-windowed-metrics --no-wait",
+        "rest_body": {
+          "batchType": "SPARK",
+          "name": "live-kafka-windowed-metrics",
+          "className": "org.apache.spark.deploy.PythonRunner",
+          "resource": "s3a://jobs/python/streaming/33_kafka_windowed_metrics.py",
+          "conf": {
+            "spark.driver.extraClassPath": "/opt/lakehouse/kafka/*",
+            "spark.executor.extraClassPath": "/opt/lakehouse/kafka/*",
+            "spark.submit.pyFiles": "s3a://jobs/python/streaming/stream_common.py"
+          },
+          "args": []
+        },
+        "curl": "curl -s -X POST http://localhost:10099/api/v1/batches \\\n  -u anji: -H 'Content-Type: application/json' \\\n  -d @- <<'JSON'\n{\n  \"batchType\": \"SPARK\",\n  \"name\": \"live-kafka-windowed-metrics\",\n  \"className\": \"org.apache.spark.deploy.PythonRunner\",\n  \"resource\": \"s3a://jobs/python/streaming/33_kafka_windowed_metrics.py\",\n  \"conf\": {\n    \"spark.driver.extraClassPath\": \"/opt/lakehouse/kafka/*\",\n    \"spark.executor.extraClassPath\": \"/opt/lakehouse/kafka/*\",\n    \"spark.submit.pyFiles\": \"s3a://jobs/python/streaming/stream_common.py\"\n  },\n  \"args\": []\n}\nJSON",
+        "stop": "python client/kyuubi_submit.py kill <batch-id>   (or: curl -X DELETE http://localhost:10099/api/v1/batches/<batch-id>)"
+      }
+    },
+    {
+      "name": "kafka-batch-publish",
+      "group": "streaming",
+      "kind": "batch",
+      "description": "Spark BATCH producer: Hive demo.orders -> orders.backfill, then batch read-back",
+      "in_test_suite": true,
+      "needs": "Kafka (make kafka-install)",
+      "success_marker": "BATCH PUBLISH TO KAFKA OK",
+      "expected_state": "FINISHED",
+      "connectors": "kafka",
+      "cli": "python client/kyuubi_submit.py --url http://localhost:10099 submit s3a://jobs/python/streaming/34_batch_publish_to_kafka.py --remote --with kafka --name kafka-batch-publish -- --run-id demo1b",
+      "rest": {
+        "method": "POST",
+        "url": "http://localhost:10099/api/v1/batches",
+        "content_type": "application/json",
+        "body": {
+          "batchType": "SPARK",
+          "name": "kafka-batch-publish",
+          "className": "org.apache.spark.deploy.PythonRunner",
+          "resource": "s3a://jobs/python/streaming/34_batch_publish_to_kafka.py",
+          "conf": {
+            "spark.driver.extraClassPath": "/opt/lakehouse/kafka/*",
+            "spark.executor.extraClassPath": "/opt/lakehouse/kafka/*"
+          },
+          "args": [
+            "--run-id",
+            "demo1b"
+          ]
+        }
+      },
+      "curl": "curl -s -X POST http://localhost:10099/api/v1/batches \\\n  -u anji: -H 'Content-Type: application/json' \\\n  -d @- <<'JSON'\n{\n  \"batchType\": \"SPARK\",\n  \"name\": \"kafka-batch-publish\",\n  \"className\": \"org.apache.spark.deploy.PythonRunner\",\n  \"resource\": \"s3a://jobs/python/streaming/34_batch_publish_to_kafka.py\",\n  \"conf\": {\n    \"spark.driver.extraClassPath\": \"/opt/lakehouse/kafka/*\",\n    \"spark.executor.extraClassPath\": \"/opt/lakehouse/kafka/*\"\n  },\n  \"args\": [\n    \"--run-id\",\n    \"demo1b\"\n  ]\n}\nJSON",
+      "kyuubi_ctl_yaml": "apiVersion: v1\nusername: anji\nrequest:\n  batchType: SPARK\n  name: kafka-batch-publish\n  resource: s3a://jobs/python/streaming/34_batch_publish_to_kafka.py\n  className: org.apache.spark.deploy.PythonRunner\n  args:\n    - \"--run-id\"\n    - \"demo1b\"\n  configs:\n    spark.driver.extraClassPath: \"/opt/lakehouse/kafka/*\"\n    spark.executor.extraClassPath: \"/opt/lakehouse/kafka/*\"\noptions:\n  verbose: true"
+    },
+    {
+      "name": "file-drop-produce",
+      "group": "streaming",
+      "kind": "local",
+      "description": "producer drops 3 JSON files of order events into s3a://data/stream/landing/",
+      "in_test_suite": true,
+      "success_marker": "PRODUCER OK",
+      "expected_state": "FINISHED",
+      "command_in_lab": "docker compose --profile tools run --rm kyuubi-client python client/producers/order_producer.py --sink s3 --orders 20 --files 3 --run-id demo1f",
+      "command_from_mac": "S3_ENDPOINT=http://localhost:9100 python client/producers/order_producer.py --sink s3 --orders 20 --files 3 --run-id demo1f"
+    },
+    {
+      "name": "file-drop-stream",
+      "group": "streaming",
+      "kind": "batch",
+      "description": "file-event stream: new files in landing/ -> Parquet silver, processed files archived",
+      "in_test_suite": true,
+      "run_after": [
+        "file-drop-produce"
+      ],
+      "success_marker": "FILE DROP STREAM OK",
+      "expected_state": "FINISHED",
+      "connectors": "",
+      "cli": "python client/kyuubi_submit.py --url http://localhost:10099 submit s3a://jobs/python/streaming/35_file_drop_stream.py --remote --py-files s3a://jobs/python/streaming/stream_common.py --name file-drop-stream -- --available-now",
+      "rest": {
+        "method": "POST",
+        "url": "http://localhost:10099/api/v1/batches",
+        "content_type": "application/json",
+        "body": {
+          "batchType": "SPARK",
+          "name": "file-drop-stream",
+          "className": "org.apache.spark.deploy.PythonRunner",
+          "resource": "s3a://jobs/python/streaming/35_file_drop_stream.py",
+          "conf": {
+            "spark.submit.pyFiles": "s3a://jobs/python/streaming/stream_common.py"
+          },
+          "args": [
+            "--available-now"
+          ]
+        }
+      },
+      "curl": "curl -s -X POST http://localhost:10099/api/v1/batches \\\n  -u anji: -H 'Content-Type: application/json' \\\n  -d @- <<'JSON'\n{\n  \"batchType\": \"SPARK\",\n  \"name\": \"file-drop-stream\",\n  \"className\": \"org.apache.spark.deploy.PythonRunner\",\n  \"resource\": \"s3a://jobs/python/streaming/35_file_drop_stream.py\",\n  \"conf\": {\n    \"spark.submit.pyFiles\": \"s3a://jobs/python/streaming/stream_common.py\"\n  },\n  \"args\": [\n    \"--available-now\"\n  ]\n}\nJSON",
+      "kyuubi_ctl_yaml": "apiVersion: v1\nusername: anji\nrequest:\n  batchType: SPARK\n  name: file-drop-stream\n  resource: s3a://jobs/python/streaming/35_file_drop_stream.py\n  className: org.apache.spark.deploy.PythonRunner\n  args:\n    - \"--available-now\"\n  configs:\n    spark.submit.pyFiles: \"s3a://jobs/python/streaming/stream_common.py\"\noptions:\n  verbose: true",
+      "always_on": {
+        "note": "runs until killed; micro-batch every 10 s (--trigger-seconds N to change)",
+        "cli": "python client/kyuubi_submit.py --url http://localhost:10099 submit s3a://jobs/python/streaming/35_file_drop_stream.py --remote --py-files s3a://jobs/python/streaming/stream_common.py --name live-file-drop-stream --no-wait",
+        "rest_body": {
+          "batchType": "SPARK",
+          "name": "live-file-drop-stream",
+          "className": "org.apache.spark.deploy.PythonRunner",
+          "resource": "s3a://jobs/python/streaming/35_file_drop_stream.py",
+          "conf": {
+            "spark.submit.pyFiles": "s3a://jobs/python/streaming/stream_common.py"
+          },
+          "args": []
+        },
+        "curl": "curl -s -X POST http://localhost:10099/api/v1/batches \\\n  -u anji: -H 'Content-Type: application/json' \\\n  -d @- <<'JSON'\n{\n  \"batchType\": \"SPARK\",\n  \"name\": \"live-file-drop-stream\",\n  \"className\": \"org.apache.spark.deploy.PythonRunner\",\n  \"resource\": \"s3a://jobs/python/streaming/35_file_drop_stream.py\",\n  \"conf\": {\n    \"spark.submit.pyFiles\": \"s3a://jobs/python/streaming/stream_common.py\"\n  },\n  \"args\": []\n}\nJSON",
+        "stop": "python client/kyuubi_submit.py kill <batch-id>   (or: curl -X DELETE http://localhost:10099/api/v1/batches/<batch-id>)"
+      }
+    },
+    {
+      "name": "verify-streaming",
+      "group": "streaming",
+      "kind": "batch",
+      "description": "batch check: every output of jobs 30-35 holds exactly this run's events",
+      "in_test_suite": true,
+      "run_after": [
+        "kafka-consumer-basic",
+        "kafka-to-delta-pg",
+        "kafka-enrich-publish",
+        "kafka-windowed-metrics",
+        "file-drop-stream"
+      ],
+      "needs": "Kafka (make kafka-install)",
+      "success_marker": "VERIFY STREAMING OK",
+      "expected_state": "FINISHED",
+      "connectors": "kafka,delta",
+      "cli": "python client/kyuubi_submit.py --url http://localhost:10099 submit s3a://jobs/python/streaming/39_verify_streaming.py --remote --with kafka,delta --py-files s3a://jobs/python/streaming/stream_common.py --name verify-streaming -- --run-id demo1 --file-run-id demo1f",
+      "rest": {
+        "method": "POST",
+        "url": "http://localhost:10099/api/v1/batches",
+        "content_type": "application/json",
+        "body": {
+          "batchType": "SPARK",
+          "name": "verify-streaming",
+          "className": "org.apache.spark.deploy.PythonRunner",
+          "resource": "s3a://jobs/python/streaming/39_verify_streaming.py",
+          "conf": {
+            "spark.driver.extraClassPath": "/opt/lakehouse/kafka/*:/opt/lakehouse/delta/*",
+            "spark.executor.extraClassPath": "/opt/lakehouse/kafka/*:/opt/lakehouse/delta/*",
+            "spark.sql.extensions": "io.delta.sql.DeltaSparkSessionExtension",
+            "spark.sql.catalog.spark_catalog": "org.apache.spark.sql.delta.catalog.DeltaCatalog",
+            "spark.submit.pyFiles": "s3a://jobs/python/streaming/stream_common.py"
+          },
+          "args": [
+            "--run-id",
+            "demo1",
+            "--file-run-id",
+            "demo1f"
+          ]
+        }
+      },
+      "curl": "curl -s -X POST http://localhost:10099/api/v1/batches \\\n  -u anji: -H 'Content-Type: application/json' \\\n  -d @- <<'JSON'\n{\n  \"batchType\": \"SPARK\",\n  \"name\": \"verify-streaming\",\n  \"className\": \"org.apache.spark.deploy.PythonRunner\",\n  \"resource\": \"s3a://jobs/python/streaming/39_verify_streaming.py\",\n  \"conf\": {\n    \"spark.driver.extraClassPath\": \"/opt/lakehouse/kafka/*:/opt/lakehouse/delta/*\",\n    \"spark.executor.extraClassPath\": \"/opt/lakehouse/kafka/*:/opt/lakehouse/delta/*\",\n    \"spark.sql.extensions\": \"io.delta.sql.DeltaSparkSessionExtension\",\n    \"spark.sql.catalog.spark_catalog\": \"org.apache.spark.sql.delta.catalog.DeltaCatalog\",\n    \"spark.submit.pyFiles\": \"s3a://jobs/python/streaming/stream_common.py\"\n  },\n  \"args\": [\n    \"--run-id\",\n    \"demo1\",\n    \"--file-run-id\",\n    \"demo1f\"\n  ]\n}\nJSON",
+      "kyuubi_ctl_yaml": "apiVersion: v1\nusername: anji\nrequest:\n  batchType: SPARK\n  name: verify-streaming\n  resource: s3a://jobs/python/streaming/39_verify_streaming.py\n  className: org.apache.spark.deploy.PythonRunner\n  args:\n    - \"--run-id\"\n    - \"demo1\"\n    - \"--file-run-id\"\n    - \"demo1f\"\n  configs:\n    spark.driver.extraClassPath: \"/opt/lakehouse/kafka/*:/opt/lakehouse/delta/*\"\n    spark.executor.extraClassPath: \"/opt/lakehouse/kafka/*:/opt/lakehouse/delta/*\"\n    spark.sql.extensions: \"io.delta.sql.DeltaSparkSessionExtension\"\n    spark.sql.catalog.spark_catalog: \"org.apache.spark.sql.delta.catalog.DeltaCatalog\"\n    spark.submit.pyFiles: \"s3a://jobs/python/streaming/stream_common.py\"\noptions:\n  verbose: true"
+    },
+    {
+      "name": "live-producer",
+      "group": "streaming",
+      "kind": "local",
+      "description": "always-on producer: ~5 events/s into orders.events until Ctrl-C",
+      "in_test_suite": false,
+      "needs": "Kafka (make kafka-install)",
+      "expected_state": "FINISHED",
+      "command_in_lab": "docker compose --profile tools run --rm kyuubi-client python client/producers/order_producer.py --forever --rate 5",
+      "command_from_mac": "python client/producers/order_producer.py --forever --rate 5 --bootstrap localhost:9094"
+    },
+    {
+      "name": "live-file-dropper",
+      "group": "streaming",
+      "kind": "local",
+      "description": "always-on producer: a JSON file into data/stream/landing/ every ~5 s",
+      "in_test_suite": false,
+      "expected_state": "FINISHED",
+      "command_in_lab": "docker compose --profile tools run --rm kyuubi-client python client/producers/order_producer.py --sink s3 --forever --rate 5",
+      "command_from_mac": "S3_ENDPOINT=http://localhost:9100 python client/producers/order_producer.py --sink s3 --forever --rate 5"
+    },
+    {
+      "name": "tail-enriched",
+      "group": "streaming",
+      "kind": "local",
+      "description": "Python consumer: print the newest messages Spark published to orders.enriched",
+      "in_test_suite": false,
+      "needs": "Kafka (make kafka-install)",
+      "expected_state": "FINISHED",
+      "command_in_lab": "docker compose --profile tools run --rm kyuubi-client python client/producers/topic_tail.py orders.enriched --last 5",
+      "command_from_mac": "python client/producers/topic_tail.py orders.enriched --last 5 --bootstrap localhost:9094"
+    },
+    {
+      "name": "tail-metrics-follow",
+      "group": "streaming",
+      "kind": "local",
+      "description": "Python consumer: follow orders.metrics live while job 33 runs always-on",
+      "in_test_suite": false,
+      "needs": "Kafka (make kafka-install)",
+      "expected_state": "FINISHED",
+      "command_in_lab": "docker compose --profile tools run --rm kyuubi-client python client/producers/topic_tail.py orders.metrics --follow",
+      "command_from_mac": "python client/producers/topic_tail.py orders.metrics --follow --bootstrap localhost:9094"
+    }
+  ]
+}

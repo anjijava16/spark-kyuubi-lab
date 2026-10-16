@@ -64,3 +64,30 @@ CREATE TABLE IF NOT EXISTS order_tracking (
   events_seen   INTEGER     NOT NULL,
   updated_at    TIMESTAMP   NOT NULL DEFAULT now()
 );
+
+-- Streaming examples (jobs/python/streaming/)
+CREATE TABLE IF NOT EXISTS kafka_order_status (
+  order_id      TEXT PRIMARY KEY,
+  run_id        TEXT,
+  customer_id   INTEGER,
+  status        TEXT        NOT NULL,
+  status_time   TIMESTAMP   NOT NULL,
+  amount        NUMERIC(12,2),
+  city          TEXT,
+  events_seen   INTEGER     NOT NULL,
+  updated_at    TIMESTAMP   NOT NULL DEFAULT now()
+);
+
+CREATE TABLE IF NOT EXISTS order_metrics_live (
+  window_start    TIMESTAMP NOT NULL,
+  window_end      TIMESTAMP NOT NULL,
+  city            TEXT      NOT NULL,
+  events          BIGINT    NOT NULL,
+  orders_created  BIGINT    NOT NULL,
+  orders_paid     BIGINT    NOT NULL,
+  orders_delivered BIGINT   NOT NULL,
+  orders_cancelled BIGINT   NOT NULL,
+  revenue_paid    NUMERIC(14,2),
+  updated_at      TIMESTAMP NOT NULL DEFAULT now(),
+  PRIMARY KEY (window_start, city)
+);

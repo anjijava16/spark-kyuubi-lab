@@ -123,7 +123,8 @@ def process(batch, batch_id):
     """Runs once per micro-batch with that batch's events as a normal DataFrame."""
     s = batch.sparkSession
     events = (batch.drop("wave").dropDuplicates(["event_id"])
-              .withColumn("ingested_at", F.current_timestamp()))
+              .withColumn("ingested_at", F.current_timestamp())
+              .persist())                  # used several times below
     n_in = events.count()
     if n_in == 0:
         return
@@ -167,6 +168,7 @@ def process(batch, batch_id):
     stats.append((batch_id, n_in, added, current.count(), upserted))
     print(f"  batch {batch_id}: {n_in} events in, {added} new in log, "
           f"{current.count()} orders updated, {upserted} PG rows changed  {mix}")
+    events.unpersist()
 
 
 events_stream = (spark.readStream.schema(EVENT_SCHEMA)

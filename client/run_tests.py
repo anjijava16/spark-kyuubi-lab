@@ -15,143 +15,72 @@ Options:
     --list                            print the test names and exit
 """
 import argparse
+import datetime as dt
 import os
+import socket
+import subprocess
 import sys
 import time
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from kyuubi_submit import Kyuubi, lakehouse_conf  # noqa: E402
+from job_catalog import CASES, GROUPS, LOCAL_JAR, SPARK_VERSION  # noqa: E402
 
-HERE = os.path.dirname(os.path.abspath(__file__))
-JOBS = os.path.normpath(os.path.join(HERE, "..", "jobs"))
-SPARK_VERSION = os.getenv("SPARK_VERSION", "4.1.3")
-JAR = "s3a://jobs/jars/spark-kyuubi-jobs.jar"
-LOCAL_JAR = os.path.join(JOBS, "jars", "spark-kyuubi-jobs.jar")
+ROOT = os.path.normpath(os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."))
 
-# Each case: name, group, resource, and the final batch state we expect.
-# "remote" means Kyuubi's spark-submit reads the file from RustFS (or the
-# Kyuubi host). remote=False means this client uploads the file itself.
-# "marker" is a line the job prints only when its own checks passed; the
-# test fails if the batch FINISHED but the marker is missing.
-# "with" adds a table-format profile (see LAKEHOUSE_PROFILES in kyuubi_submit.py).
-# "after" lists tests whose output this one reads; it is skipped if they failed.
-PY = "s3a://jobs/python"
-OT = f"{PY}/order_tracking"
-CASES = [
-    # ---- core: Kyuubi -> Spark -> storage / metastore ----------------------
-    dict(name="jar-sparkpi", group="core",
-         note="example JAR that ships with Spark, path on the Kyuubi host",
-         resource=f"/opt/spark/examples/jars/spark-examples_2.13-{SPARK_VERSION}.jar",
-         class_name="org.apache.spark.examples.SparkPi",
-         args=["20"], remote=True, marker="Pi is roughly"),
-    dict(name="py-smoke", group="core",
-         note="PySpark from RustFS, checks executors respond",
-         resource=f"{PY}/01_smoke_test.py", remote=True, marker="SMOKE TEST OK"),
-    dict(name="py-upload", group="core",
-         note="same script, uploaded by the client instead of read from RustFS",
-         resource=os.path.join(JOBS, "python", "01_smoke_test.py"), remote=False,
-         marker="SMOKE TEST OK"),
-    dict(name="py-wordcount", group="core",
-         note="reads and writes RustFS through s3a",
-         resource=f"{PY}/02_wordcount_s3.py",
-         args=["s3a://data/input/sample.txt", "s3a://data/output/wordcount_py"],
-         remote=True, marker="WORDCOUNT OK"),
-    dict(name="py-hive-etl", group="core",
-         note="CSV on RustFS -> Hive table demo.orders (metastore + warehouse)",
-         resource=f"{PY}/03_hive_etl.py",
-         args=["s3a://data/input/orders.csv"], remote=True, marker="HIVE ETL OK"),
-    dict(name="py-pyfiles", group="core",
-         note="--py-files zip from RustFS, imported on executors",
-         resource=f"{PY}/04_pyfiles_demo.py",
-         py_files=["s3a://jobs/python/libs/text_utils.zip"],
-         args=["s3a://data/input/sample.txt"], remote=True, marker="PYFILES OK"),
-    dict(name="py-conf-args", group="core",
-         note="per-job Spark conf and app args reach the driver",
-         resource=f"{PY}/06_conf_and_args.py",
-         conf={"spark.executor.memory": "768m", "spark.app.custom.team": "data-eng"},
-         args=["--run-date", "2026-10-15", "--env", "lab"], remote=True,
-         marker="CONF AND ARGS OK"),
-    dict(name="java-wordcount", group="core",
-         note="Java class from the built jar",
-         resource=JAR, class_name="com.example.JavaWordCount",
-         args=["s3a://data/input/sample.txt", "s3a://data/output/wordcount_java"],
-         remote=True, needs_jar=True, marker="JAVA WORDCOUNT OK"),
-    dict(name="scala-sales-report", group="core",
-         note="Scala class reading demo.orders, writing demo.sales_summary",
-         resource=JAR, class_name="com.example.ScalaSalesReport",
-         remote=True, needs_jar=True, after=["py-hive-etl"], marker="SCALA SALES REPORT OK"),
-    dict(name="py-expected-failure", group="core",
-         note="job raises on purpose; Kyuubi must report ERROR, not FINISHED",
-         resource=f"{PY}/05_expected_failure.py",
-         remote=True, expect="ERROR"),
 
-    # ---- file formats ------------------------------------------------------
-    dict(name="formats", group="formats",
-         note="CSV->Parquet->ORC->JSON->Avro->CSV, round trip must be identical",
-         resource=f"{PY}/10_format_conversions.py", remote=True,
-         marker="FORMAT CONVERSIONS OK"),
+def kafka_reachable():
+    host, _, port = os.getenv("KAFKA_BOOTSTRAP", "kafka:9092").partition(":")
+    try:
+        with socket.create_connection((host, int(port or 9092)), timeout=3):
+            return True
+    except OSError:
+        return False
 
-    # ---- Postgres ----------------------------------------------------------
-    dict(name="pg-file-to-pg", group="postgres",
-         note="Parquet on RustFS -> Postgres orders (JDBC write)",
-         resource=f"{PY}/11_file_to_postgres.py", remote=True,
-         marker="FILE TO POSTGRES OK"),
-    dict(name="pg-pg-to-files", group="postgres",
-         note="Postgres (parallel + pushdown reads) -> Parquet/ORC/CSV",
-         resource=f"{PY}/12_postgres_to_files.py", remote=True,
-         after=["pg-file-to-pg"], marker="POSTGRES TO FILES OK"),
-    dict(name="pg-pg-to-pg", group="postgres",
-         note="Postgres -> Postgres: full refresh + idempotent upsert",
-         resource=f"{PY}/13_postgres_to_postgres.py", remote=True,
-         after=["pg-file-to-pg"], marker="POSTGRES TO POSTGRES OK"),
 
-    # ---- lakehouse table formats -------------------------------------------
-    dict(name="iceberg", group="lakehouse",
-         note="Iceberg in Hive Metastore: MERGE, DELETE, schema+partition evolution, time travel",
-         resource=f"{PY}/14_iceberg_demo.py", remote=True, with_formats="iceberg",
-         marker="ICEBERG DEMO OK"),
-    dict(name="delta", group="lakehouse",
-         note="Delta: MERGE, DML, mergeSchema, time travel, change data feed, OPTIMIZE",
-         resource=f"{PY}/15_delta_demo.py", remote=True, with_formats="delta",
-         marker="DELTA DEMO OK"),
-    dict(name="hudi", group="lakehouse",
-         note="Hudi COW: insert, upsert, delete, incremental query, time travel",
-         resource=f"{PY}/16_hudi_demo.py", remote=True, with_formats="hudi",
-         marker="HUDI DEMO OK"),
+def fill(values, run_id):
+    return [v.replace("{run_id}", run_id) for v in values]
 
-    # ---- order tracking project (runs in this order) ----------------------
-    dict(name="orders-wave1", group="orders",
-         note="generate wave 1 of order events (resets earlier runs)",
-         resource=f"{OT}/20_generate_order_events.py", remote=True,
-         args=["--wave", "1", "--reset"], marker="ORDER EVENTS WAVE OK"),
-    dict(name="orders-stream1", group="orders",
-         note="stream wave 1 -> Iceberg log, Delta status, Postgres (fresh start)",
-         resource=f"{OT}/21_track_orders_stream.py", remote=True,
-         with_formats="delta,iceberg", args=["--reset"], after=["orders-wave1"],
-         marker="ORDER TRACKING STREAM OK"),
-    dict(name="orders-wave2", group="orders", note="generate wave 2",
-         resource=f"{OT}/20_generate_order_events.py", remote=True,
-         args=["--wave", "2"], after=["orders-stream1"], marker="ORDER EVENTS WAVE OK"),
-    dict(name="orders-stream2", group="orders",
-         note="stream again: only wave 2 files are new (checkpoint)",
-         resource=f"{OT}/21_track_orders_stream.py", remote=True,
-         with_formats="delta,iceberg", after=["orders-wave2"],
-         marker="ORDER TRACKING STREAM OK"),
-    dict(name="orders-wave3", group="orders",
-         note="generate wave 3 (with a duplicate and a late event)",
-         resource=f"{OT}/20_generate_order_events.py", remote=True,
-         args=["--wave", "3"], after=["orders-stream2"], marker="ORDER EVENTS WAVE OK"),
-    dict(name="orders-stream3", group="orders", note="stream wave 3",
-         resource=f"{OT}/21_track_orders_stream.py", remote=True,
-         with_formats="delta,iceberg", after=["orders-wave3"],
-         marker="ORDER TRACKING STREAM OK"),
-    dict(name="orders-report", group="orders",
-         note="SLA report + check Iceberg, Delta and Postgres all agree",
-         resource=f"{OT}/22_order_sla_report.py", remote=True,
-         with_formats="delta,iceberg", after=["orders-stream3"],
-         marker="ORDER SLA REPORT OK"),
-]
-GROUPS = ["core", "formats", "postgres", "lakehouse", "orders"]
+
+def run_local(cmd, show):
+    """Run a helper (e.g. a producer) in this container; return (state, log lines)."""
+    p = subprocess.run(cmd, cwd=ROOT, capture_output=True, text=True, timeout=600)
+    lines = (p.stdout + p.stderr).splitlines()
+    if show:
+        for l in lines:
+            print(l)
+    return ("FINISHED" if p.returncode == 0 else "ERROR"), lines
+
+
+def run_local_case(c, a):
+    cmd = fill(c["cmd"], a.run_id)
+    print(f"    local: {' '.join(cmd)}")
+    try:
+        state, lines = run_local(cmd, a.show_logs)
+    except Exception as e:   # e.g. timeout
+        state, lines = "ERROR", [str(e)]
+    return "(local)", state, lines
+
+
+def run_batch_case(k, c, a):
+    lines = []
+
+    def out(line):
+        lines.append(line)
+        if a.show_logs:
+            print(line)
+
+    conf = lakehouse_conf(c.get("with_formats", "").split(","))
+    conf.update(c.get("conf", {}))
+    try:
+        batch = k.submit(c["resource"], f"test-{c['name']}", c.get("class_name"), conf,
+                         fill(c.get("args", []), a.run_id), c.get("py_files"),
+                         c.get("files"), c.get("jars"), remote=c["remote"])
+    except SystemExit as e:  # HTTP error from Kyuubi
+        return "-", "SUBMIT_FAILED", [str(e)]
+    print(f"    batch id {batch['id']}")
+    info = k.follow(batch["id"], out=out, max_wait=a.max_wait)
+    return batch["id"], info.get("state", "?"), lines
 
 
 def main():
@@ -162,11 +91,13 @@ def main():
     ap.add_argument("--show-logs", action="store_true")
     ap.add_argument("--list", action="store_true")
     ap.add_argument("--max-wait", type=int, default=900, help="seconds per job")
+    ap.add_argument("--run-id", default=dt.datetime.now(dt.timezone.utc).strftime("t%m%d%H%M%S"),
+                    help="tag for this run's streaming test data")
     a = ap.parse_args()
 
     if a.list:
         for c in CASES:
-            print(f"{c['group']:10} {c['name']:22} {c['note']}")
+            print(f"{c['group']:10} {c['name']:22} {'(local) ' if c.get('kind') == 'local' else ''}{c['note']}")
         return
 
     cases = CASES
@@ -181,7 +112,11 @@ def main():
         cases = [c for c in cases if c["name"] in wanted]
 
     k = Kyuubi(a.url, os.getenv("KYUUBI_USER", "anji"), os.getenv("KYUUBI_PASSWORD"))
-    print(f"Kyuubi REST: {a.url}   Spark {SPARK_VERSION}   {len(cases)} test(s)\n")
+    has_kafka = kafka_reachable() if any(c.get("needs_kafka") for c in cases) else False
+    print(f"Kyuubi REST: {a.url}   Spark {SPARK_VERSION}   {len(cases)} test(s)   run_id {a.run_id}")
+    if any(c.get("needs_kafka") for c in cases):
+        print(f"Kafka: {'reachable' if has_kafka else 'NOT reachable - Kafka tests will be skipped (make kafka-install)'}")
+    print()
 
     results = []
     outcome = {}
@@ -192,6 +127,10 @@ def main():
         if c.get("needs_jar") and not os.path.isfile(LOCAL_JAR):
             results.append((name, "-", "SKIPPED", expect, 0, "jar not built: make jars && make upload"))
             continue
+        if c.get("needs_kafka") and not has_kafka:
+            results.append((name, "-", "SKIPPED", expect, 0, "Kafka not installed: make kafka-install"))
+            outcome[name] = False
+            continue
         failed_deps = [d for d in c.get("after", []) if outcome.get(d) is False]
         if failed_deps:
             results.append((name, "-", "SKIPPED", expect, 0, f"depends on {failed_deps[0]}, which failed"))
@@ -200,26 +139,10 @@ def main():
 
         print(f"==> {name}: {c['note']}")
         t0 = time.time()
-        log_lines = []
-        conf = lakehouse_conf(c.get("with_formats", "").split(","))
-        conf.update(c.get("conf", {}))
-        try:
-            batch = k.submit(
-                c["resource"], f"test-{name}", c.get("class_name"),
-                conf, c.get("args", []),
-                c.get("py_files"), c.get("files"), c.get("jars"),
-                remote=c["remote"])
-            bid = batch["id"]
-            print(f"    batch id {bid}")
-            def out(line):
-                log_lines.append(line)
-                if a.show_logs:
-                    print(line)
-            info = k.follow(bid, out=out, max_wait=a.max_wait)
-            state = info.get("state", "?")
-        except SystemExit as e:  # HTTP error from Kyuubi
-            bid, state = "-", "SUBMIT_FAILED"
-            log_lines.append(str(e))
+        if c.get("kind") == "local":
+            bid, state, log_lines = run_local_case(c, a)
+        else:
+            bid, state, log_lines = run_batch_case(k, c, a)
 
         secs = int(time.time() - t0)
         ok = state == expect
@@ -231,14 +154,14 @@ def main():
         if not ok:
             tail = [l for l in log_lines if l.strip()][-15:]
             detail = detail or "see log tail above"
-            print("    ---- last driver log lines ----")
+            print("    ---- last log lines ----")
             for l in tail:
                 print("    " + l)
         print(f"    -> {state} in {secs}s ({'PASS' if ok else 'FAIL'})\n")
         results.append((name, bid, state, expect, secs, detail))
 
     print("\n" + "=" * 96)
-    print(f"{'test':22} {'state':14} {'expected':10} {'secs':>5}  {'result':7} batch id / note")
+    print(f"{'test':24} {'state':14} {'expected':10} {'secs':>5}  {'result':7} batch id / note")
     print("-" * 96)
     failed = 0
     for name, bid, state, expect, secs, detail in results:
@@ -249,7 +172,7 @@ def main():
         else:
             res = "FAIL"
             failed += 1
-        print(f"{name:22} {state:14} {expect:10} {secs:5}  {res:7} {bid} {detail}")
+        print(f"{name:24} {state:14} {expect:10} {secs:5}  {res:7} {bid} {detail}")
     print("=" * 96)
     sys.exit(1 if failed else 0)
 

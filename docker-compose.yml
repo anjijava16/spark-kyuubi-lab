@@ -146,6 +146,71 @@ services:
     restart: "no"
     networks: [lab]
 
+  # ------------------------------------------------------------------
+  # Streaming: Kafka (single-node KRaft, no ZooKeeper) - OPTIONAL
+  # Profile "kafka": not started by `make up`. Install with `make kafka-install`.
+  #   inside Docker: kafka:9092      from your Mac: localhost:9094
+  # ------------------------------------------------------------------
+  kafka:
+    image: ${KAFKA_IMAGE:-apache/kafka:4.3.1}
+    profiles: ["kafka"]
+    hostname: kafka
+    environment:
+      KAFKA_NODE_ID: 1
+      KAFKA_PROCESS_ROLES: broker,controller
+      KAFKA_LISTENERS: PLAINTEXT://:9092,CONTROLLER://:9093,EXTERNAL://:9094
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092,EXTERNAL://localhost:9094
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT,EXTERNAL:PLAINTEXT
+      KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+      KAFKA_CONTROLLER_QUORUM_VOTERS: 1@kafka:9093
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
+      KAFKA_NUM_PARTITIONS: 3
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
+    ports:
+      - "9094:9094"
+    # no data volume: topics live as long as the container (it's a lab);
+    # `make kafka-reset` recreates them empty
+    healthcheck:
+      test: ["CMD-SHELL", "/opt/kafka/bin/kafka-broker-api-versions.sh --bootstrap-server kafka:9092 >/dev/null 2>&1"]
+      interval: 10s
+      timeout: 10s
+      retries: 20
+      start_period: 20s
+    restart: unless-stopped
+    networks: [lab]
+
+  # One-shot: create the lab's topics (idempotent).
+  kafka-init:
+    image: ${KAFKA_IMAGE:-apache/kafka:4.3.1}
+    profiles: ["kafka"]
+    depends_on:
+      kafka:
+        condition: service_healthy
+    volumes:
+      - ./docker/kafka/create-topics.sh:/create-topics.sh:ro
+    entrypoint: ["bash", "/create-topics.sh"]
+    restart: "no"
+    networks: [lab]
+
+  # Browse topics, messages and consumer groups: http://localhost:8090
+  kafka-ui:
+    image: ${KAFKA_UI_IMAGE:-ghcr.io/kafbat/kafka-ui:v1.5.0}
+    profiles: ["kafka"]
+    environment:
+      KAFKA_CLUSTERS_0_NAME: lab
+      KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: kafka:9092
+    ports:
+      - "8090:8080"
+    depends_on:
+      kafka:
+        condition: service_healthy
+    restart: unless-stopped
+    networks: [lab]
+
   hive-metastore:
     image: spark-kyuubi-lab/hive-metastore:local
     build:
@@ -291,7 +356,8 @@ services:
       - mvn -B -q -Dspark.version=${SPARK_VERSION:-4.1.3} clean package && cp target/spark-kyuubi-jobs.jar /out/ && ls -l /out
     networks: [lab]
 
-  # Python client that talks to Kyuubi REST. Default command runs the test suite.
+  # Python client container: talks to Kyuubi REST, runs the test suite (default
+  # command) and the producer/consumer apps in client/producers/.
   kyuubi-client:
     image: python:3.12-slim
     profiles: ["tools"]
@@ -299,6 +365,10 @@ services:
     environment:
       KYUUBI_REST_URL: http://kyuubi:10099
       SPARK_VERSION: ${SPARK_VERSION:-4.1.3}
+      KAFKA_BOOTSTRAP: kafka:9092
+      S3_ENDPOINT: http://rustfs:9000
+      RUSTFS_ACCESS_KEY: ${RUSTFS_ACCESS_KEY:-rustfsadmin}
+      RUSTFS_SECRET_KEY: ${RUSTFS_SECRET_KEY:-rustfsadmin123}
     volumes:
       - ./client:/work/client:ro
       - ./jobs:/work/jobs:ro

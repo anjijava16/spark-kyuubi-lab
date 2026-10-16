@@ -12,7 +12,7 @@ make test      # run every sample job through Kyuubi, print pass/fail
 make sql       # SQL shell over Kyuubi JDBC
 ```
 
-What the 24 tests cover (run a group with `make test-<group>`):
+What the 34 tests cover (run a group with `make test-<group>`):
 
 | group | examples |
 |---|---|
@@ -20,7 +20,16 @@ What the 24 tests cover (run a group with `make test-<group>`):
 | formats | CSV → Parquet → ORC → JSON → Avro → CSV, round trip must be identical |
 | postgres | file → Postgres, Postgres → files (parallel + pushdown reads), Postgres → Postgres upsert |
 | lakehouse (`make test-lake`) | Iceberg, Delta Lake and Hudi: MERGE, deletes, time travel, schema evolution, CDC/incremental |
+| hive | Hive SQL ELT: external TEXTFILE, ORC, partitioned Parquet, RCFile, CTAS, views |
 | orders | real-time order tracking: streaming into an Iceberg event log, Delta status table and Postgres, plus an SLA report |
+| streaming | Kafka producer → Spark consumer, Spark → Kafka publisher (stream and batch), windowed metrics, file-event streams |
+
+Kafka is optional: `make kafka-install` adds a broker, topics and a UI
+(http://localhost:8090). Streaming jobs run always-on, for N seconds, or
+`--available-now`; `make produce` + `make stream-start` gives you a live demo.
+
+Every job's CLI command, REST payload and curl example is in
+**All_execution_payload.md** (and `.json`).
 
 Jobs that use a table format are submitted with `--with iceberg`, `--with delta`,
 `--with delta,iceberg` or `--with hudi`.
@@ -35,6 +44,7 @@ Jobs that use a table format are submitted with `--with iceberg`, `--with delta`
 | Kyuubi web UI | http://localhost:10099/ui (sessions, engines, batches) |
 | Kyuubi REST | http://localhost:10099/api/v1/batches |
 | Kyuubi JDBC | jdbc:hive2://localhost:10009/default (Thrift, not a web page) |
+| Kafka (optional) | localhost:9094 from your Mac; UI http://localhost:8090 |
 
 Submit your own job:
 

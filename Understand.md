@@ -34,6 +34,10 @@ there and how to drive it.
 18. [Postgres: files to tables and back](#18-postgres-files-to-tables-and-back)
 19. [Lakehouse tables: Iceberg, Delta Lake, Hudi](#19-lakehouse-tables-iceberg-delta-lake-hudi)
 20. [Project: real-time order tracking](#20-project-real-time-order-tracking)
+21. [Hive ELT: TEXTFILE, ORC, Parquet, RCFile](#21-hive-elt-textfile-orc-parquet-rcfile)
+22. [Kafka: optional install](#22-kafka-optional-install)
+23. [Streaming: Kafka producers, consumers and file events](#23-streaming-kafka-producers-consumers-and-file-events)
+24. [All execution payloads](#24-all-execution-payloads)
 
 ---
 
@@ -297,6 +301,9 @@ directories under `s3a://warehouse/`.
 | Delta Lake | 4.4.0, `delta-spark_4.1_2.13` | Delta publishes per-Spark-minor builds since 4.1; 4.4.0 is the newest `_4.1` build listed |
 | Apache Iceberg | 1.12.0, `iceberg-spark-runtime-4.1_2.13` | 1.12 supports Spark 3.5, 4.0 and 4.1 |
 | Apache Hudi | 1.2.0, `hudi-spark4.1-bundle_2.13` | first Hudi line with a Spark 4.1 bundle |
+| Kafka (optional) | `apache/kafka:4.3.1`, single KRaft node | no ZooKeeper; installed with `make kafka-install` |
+| Spark Kafka connector | `spark-sql-kafka-0-10_2.13` = Spark's version, `kafka-clients` 3.9.1 | the client version Spark 4.1.3's own pom pins; talks to a 4.x broker fine |
+| Kafka UI (optional) | `ghcr.io/kafbat/kafka-ui:v1.5.0` | maintained fork of the old provectus UI |
 
 **Why Hive Metastore 3.1.3 and not 4.x.** Spark 4 still talks to the
 metastore through its built-in Hive 2.3 client. That client has worked with
@@ -328,7 +335,8 @@ spark-kyuubi-lab/
 │   ├── spark/Dockerfile          targets: spark-base (master/worker/history), kyuubi
 │   ├── storage-init/init-buckets.sh  buckets + upload, via the AWS CLI
 │   ├── postgres/                 init-shop.sh + shop-schema.sql (app DB "shop")
-│   ├── lakehouse/fetch-lakehouse-jars.sh  Delta/Iceberg/Hudi jars -> shared volume
+│   ├── lakehouse/fetch-lakehouse-jars.sh  Delta/Iceberg/Hudi/Kafka-connector jars -> shared volume
+│   ├── kafka/create-topics.sh    the lab's Kafka topics (optional Kafka add-on)
 │   └── hive-metastore/
 │       ├── Dockerfile            apache/hive:3.1.3 + s3a jars + Postgres JDBC
 │       └── start-metastore.sh    init schema once, then run the metastore
@@ -353,7 +361,9 @@ spark-kyuubi-lab/
 │   │   ├── 14_iceberg_demo.py         --with iceberg
 │   │   ├── 15_delta_demo.py           --with delta
 │   │   ├── 16_hudi_demo.py            --with hudi
+│   │   ├── 17_hive_elt.py             Hive SQL ELT over TEXTFILE/ORC/PARQUET/RCFILE
 │   │   ├── order_tracking/            20 generator, 21 stream, 22 report, README
+│   │   ├── streaming/                 30-35 Kafka + file-event streams, 39 verify, stream_common.py
 │   │   └── libs/text_utils.py + text_utils.zip
 │   ├── jvm/                      Maven project, Java + Scala in one jar
 │   │   ├── pom.xml
@@ -369,6 +379,10 @@ spark-kyuubi-lab/
 └── client/
     ├── kyuubi_submit.py          spark-submit-style CLI over Kyuubi REST
     ├── run_tests.py              runs every sample job, prints pass/fail
+    ├── job_catalog.py            every job's definition (tests + payload doc read this)
+    ├── gen_payloads.py           writes All_execution_payload.md / .json
+    ├── producers/order_producer.py   Python producer app (Kafka or S3 file drops)
+    ├── producers/topic_tail.py       Python consumer: print messages from a topic
     ├── batch-yaml/*.yaml         same jobs for Kyuubi's own kyuubi-ctl
     ├── entry.sh, requirements.txt
 ```
@@ -884,6 +898,11 @@ Start with the driver log (`ks log <id>`, or the `localLog` endpoint), then
 | `Table or view not found: ice.lab...` / `ice.tracking...` | Iceberg catalog `ice` not configured | submit with `--with iceberg` (or `delta,iceberg`) |
 | Hudi job fails right after a Delta job in the same engine | both want `spark_catalog` | never combine `--with hudi` with delta/iceberg; separate jobs are fine |
 | test shows `NO_MARKER` | job exited 0 but its own checks didn't print the OK line | read the log tail printed above the table; usually an exception caught somewhere |
+| Kafka tests show `SKIP ... make kafka-install` | Kafka is optional and not running | `make kafka-install` |
+| `Failed to find data source: kafka` | job submitted without the connector | add `--with kafka`; check `ls /opt/lakehouse/kafka` in the kyuubi container |
+| streaming job reads nothing from Kafka | checkpoint already past the data, or topic recreated | rerun the producer, or submit with `-- --reset` to start from `--starting-offsets` |
+| always-on streams stuck `WAITING` on the master UI | out of cores (each live stream holds its cores) | `make stream-stop`, use `--conf spark.cores.max=1`, or `--scale spark-worker=2` |
+| `CAST_INVALID_INPUT` reading raw text | Spark 4 ANSI mode: bad casts throw | `try_cast(...)` for raw input (see 17_hive_elt.py) |
 | `UnknownHostException: jobs.rustfs` | path-style access off | `fs.s3a.path.style.access=true` |
 | `storage-init` exits non-zero | RustFS not up yet, or wrong keys | `docker compose logs rustfs storage-init`; then `make upload` again |
 | `rustfs` restarting, "permission denied" on /data | volume not owned by uid 10001 | `docker compose up rustfs-perms` then `docker compose restart rustfs` |
@@ -953,6 +972,12 @@ A sensible order for the migration:
 make up              # build + start
 make test-core | test-formats | test-postgres | test-lake | test-orders
 make sql-lake        # SQL shell with Delta + Iceberg enabled
+make kafka-install   # optional: Kafka broker + topics + UI + Spark connector
+make produce         # live Kafka producer (Ctrl-C to stop); make produce-files for S3 drops
+make stream-start    # submit the always-on streaming jobs; make stream-stop to kill them
+make tail TOPIC=orders.metrics FOLLOW=1   # watch what Spark publishes
+make test-hive | test-streaming
+make payloads        # regenerate All_execution_payload.md / .json
 make psql            # psql into the shop database
 make lakehouse       # re-download lakehouse jars after changing .env
 make pg-init         # recreate the shop database
@@ -980,6 +1005,8 @@ ks status <id> | ks log <id> | ks kill <id> | ks list
 | 15432 | Postgres (metastore DB) |
 | 10009 | Kyuubi JDBC / Thrift (not a web page) |
 | 10099 | Kyuubi REST + web UI at `/ui` |
+| 9094 | Kafka from your Mac (optional add-on; `kafka:9092` inside Docker) |
+| 8090 | Kafka UI (optional add-on) |
 | 4040-4045 | live driver UIs (inside kyuubi) |
 
 ---
@@ -1270,3 +1297,229 @@ files processed 0 batches, and all 60 statuses matched the raw events.
 
 Moving to Kafka later only changes the source line (`readStream.format("kafka")`
 plus `from_json` with the same schema); everything in `process()` stays.
+
+---
+
+## 21. Hive ELT: TEXTFILE, ORC, Parquet, RCFile
+
+`jobs/python/17_hive_elt.py` (`make test-hive`) is written the way a lot of
+Hive and Cloudera jobs are: load raw files untouched, then transform them
+with SQL inside the warehouse. Everything goes into database `elt` in the
+Hive Metastore.
+
+```
+raw CSV folder ──► raw_orders           EXTERNAL, STORED AS TEXTFILE (nothing copied; every column a string)
+                     │ try_cast + clean
+                     ▼
+                 orders_clean            STORED AS ORC         (CTAS)
+                     │ INSERT OVERWRITE ... PARTITION (order_month)   dynamic partitions
+                     ▼
+                 orders_fact             STORED AS PARQUET, PARTITIONED BY (order_month)
+                 orders_archive_rc       STORED AS RCFILE      (same rows, older Hive format)
+                 monthly_summary         STORED AS ORC         (CTAS aggregate)
+                 v_monthly_top           VIEW with a window function
+                 + ANALYZE TABLE ... COMPUTE STATISTICS
+```
+
+At the end it prints what the metastore recorded for each table (input
+format and location), and checks that revenue is identical in the Parquet
+fact, the RCFile archive and the ORC summary.
+
+Two lessons came out of testing this job on Spark 4.1.3, and both matter
+when you bring old Hive SQL over:
+
+- **ANSI mode is on.** `CAST('quantity' AS INT)` throws in Spark 4 instead of
+  returning NULL. Raw text needs `try_cast`.
+- **Header lines.** Spark's reader for Hive text tables can ignore
+  `skip.header.line.count`, so the CSV header comes through as a row. The
+  job filters it with `WHERE try_cast(order_id AS INT) IS NOT NULL`, which
+  would also catch any other junk row.
+
+Query the result with `make sql`:
+
+```sql
+SHOW TABLES IN elt;
+SHOW PARTITIONS elt.orders_fact;
+SELECT * FROM elt.v_monthly_top WHERE rank_in_month = 1;
+DESCRIBE FORMATTED elt.orders_archive_rc;
+```
+
+---
+
+## 22. Kafka: optional install
+
+Kafka is an add-on. `make up` doesn't start it, so the lab stays light when
+you don't need streaming. To add it:
+
+```bash
+make kafka-install
+```
+
+That starts one Kafka broker in KRaft mode (no ZooKeeper), creates the
+topics, starts a web UI and makes sure Spark's Kafka connector jars are in
+`/opt/lakehouse/kafka/`.
+
+| | |
+|---|---|
+| broker, inside Docker | `kafka:9092` (what Spark and the client container use) |
+| broker, from your Mac | `localhost:9094` |
+| web UI | http://localhost:8090 (topics, messages, consumer groups) |
+| topics | `orders.events`, `orders.enriched`, `orders.metrics` (compacted), `orders.alerts`, `orders.backfill`, 3 partitions each |
+
+Other targets: `make kafka-status`, `make kafka-topics`, `make kafka-reset`
+(deletes and recreates the topics, emptying them) and `make kafka-uninstall`.
+Kafka keeps no volume, so recreating the container also empties the topics.
+That's fine for a lab, and the streaming jobs handle it with `failOnDataLoss=false`.
+
+In compose terms, the three services (`kafka`, `kafka-init`, `kafka-ui`)
+carry `profiles: ["kafka"]`, which is why plain `docker compose up` skips them.
+
+---
+
+## 23. Streaming: Kafka producers, consumers and file events
+
+### The pieces
+
+```
+                      ┌───────────── Python apps (client/producers/) ──────────────┐
+                      │ order_producer.py  --sink kafka   -> orders.events          │
+                      │ order_producer.py  --sink s3      -> data/stream/landing/   │
+                      │ topic_tail.py <topic>             <- any topic (consumer)   │
+                      └─────────────────────────────────────────────────────────────┘
+Spark jobs (jobs/python/streaming/), all submitted through Kyuubi:
+
+ 30 Kafka consumer basic      orders.events ─► Parquet bronze, with partition/offset
+ 31 Kafka -> Delta + Postgres orders.events ─► Delta event table (MERGE on event_id) + Postgres status
+ 32 Kafka -> Kafka            orders.events ─► join customers ─► orders.enriched, orders.alerts   (Spark PUBLISHES)
+ 33 windowed metrics          orders.events ─► 5-min windows + watermark ─► orders.metrics + Postgres
+ 34 batch producer/consumer   Hive demo.orders ─► orders.backfill (batch write) ─► batch read-back
+ 35 file-event stream         data/stream/landing/*.json ─► Parquet silver, files archived after use
+ 39 verify                    batch job: checks 30-35's outputs for one producer run
+```
+
+The producer is the "order service": each order goes through CREATED →
+PAID → PACKED → SHIPPED → OUT_FOR_DELIVERY → DELIVERED (or CANCELLED), one
+JSON event per step, keyed by `order_id`. All of an order's events land in
+the same partition, in order.
+
+### Three ways to run any streaming job
+
+Every job in `streaming/` takes the same flags (from `stream_common.py`,
+shipped with `--py-files`):
+
+| flag | trigger | when |
+|---|---|---|
+| none | micro-batch every 10 s, runs until the Kyuubi batch is killed | always-on |
+| `--run-seconds N` | same, stops itself after N seconds | demos, smoke tests |
+| `--available-now` | process everything available now, then stop | tests, scheduled runs |
+
+Plus `--trigger-seconds N`, `--starting-offsets earliest|latest` (used only
+without a checkpoint), `--max-offsets N` (records per micro-batch) and
+`--reset` (delete the checkpoint and start over).
+
+Checkpoints live in `s3a://data/stream/_checkpoints/<job>`. They're what
+makes reruns pick up where they stopped instead of re-reading the topic.
+
+### Always-on walkthrough
+
+Four terminals, or tabs:
+
+```bash
+# 1. live producer, ~5 events/s
+make produce
+
+# 2. start three always-on jobs (each capped at 1 core so they all fit)
+make stream-start
+make stream-list            # they show RUNNING
+
+# 3. watch Spark's output topics
+make tail TOPIC=orders.enriched
+make tail TOPIC=orders.metrics FOLLOW=1
+
+# 4. watch Postgres change
+make psql
+shop=> select status, count(*) from kafka_order_status group by 1 order by 1;
+shop=> select window_start, city, events, revenue_paid from order_metrics_live
+       order by window_start desc limit 10;
+```
+
+Also open http://localhost:8090 for the topics and consumer lag, and the
+Spark UI of a running job at http://localhost:4040 (4041, 4042 for the
+others) to see its **Structured Streaming** tab. Stop everything with
+Ctrl-C on the producer and `make stream-stop`.
+
+For file events, `make produce-files` drops a JSON file into
+`data/stream/landing/` every few seconds. Submit job 35 without
+`--available-now` and watch the files move to `landing_archive/` as they're
+processed. You can also upload a file through the RustFS console.
+
+### What each job teaches
+
+- **30** shows the raw shape of a Kafka record (`key`, `value` bytes,
+  `partition`, `offset`, `timestamp`) and the usual first step: keep a
+  "bronze" copy of every event as received.
+- **31** handles at-least-once input. Kafka can redeliver, so the Delta
+  table is written with `MERGE ... WHEN NOT MATCHED INSERT` on `event_id`,
+  and Postgres status is recomputed from the stored events with an upsert
+  that refuses to go backwards in time.
+- **32** is Spark as a producer inside a stream: a stream-static join with a
+  Postgres lookup, and two output queries (two topics, two checkpoints) from
+  one input.
+- **33** covers event time, a watermark and `outputMode("update")`. The
+  watermark is 2 hours in the demo because the finite producer spreads event
+  times over the last hour; in a live system you'd use minutes. The metrics
+  topic is compacted, so it keeps the latest value per window/city key.
+- **34** is Kafka without streaming: `df.write.format("kafka")` to publish a
+  table, and `spark.read.format("kafka")` with `startingOffsets`/`endingOffsets`
+  to read a fixed slice back. It includes Kafka headers.
+- **35** is a file-event stream with `maxFilesPerTrigger`,
+  `cleanSource=archive`, and the hidden `_metadata` column (which file each
+  row came from).
+
+### Tested before shipping
+
+Kafka isn't reachable from where these were written, so the Kafka jobs get
+their first real run on your machine; `make test-streaming` checks every one
+of them. What could be run on Spark 4.1.3 was:
+
+- job 35 in `--available-now` mode: 161 events from 3 files, 2 micro-batches,
+  processed files archived
+- job 35 always-on (`--run-seconds 40`, 5 s trigger) while files were dropped
+  at t+9, 18 and 27 s: each file picked up in the next micro-batch, 166/166
+  events written once, clean stop
+- the producer's event generation and JSON format (the same parser reads it)
+
+### Test it all
+
+```bash
+make kafka-install
+make test-streaming          # producer -> jobs 30-35 (--available-now) -> 39 verify
+```
+
+The producer step tags its events with a fresh `run_id`, and job 39 checks
+each output for exactly that run, so repeated runs don't interfere with each
+other.
+
+---
+
+## 24. All execution payloads
+
+`All_execution_payload.md` (readable) and `All_execution_payload.json` (for
+tools) list every job in the lab: 32 Kyuubi batches plus 6 producer/consumer
+commands. For each batch you get:
+
+- the `kyuubi_submit.py` command
+- the exact JSON body for `POST /api/v1/batches` (or the multipart parts for uploads)
+- a ready-to-paste curl command
+- a `kyuubi-ctl` YAML
+- for streaming jobs, an always-on variant and how to stop it
+
+They're generated from `client/job_catalog.py`, the same list the test runner
+uses, and the JSON comes from the same `build_request()` function the client
+uses to submit. Before shipping, every one of the 74 documented commands (CLI
+and curl, including always-on variants) was run against a fake Kyuubi
+endpoint that applies Kyuubi 1.12's validation rules, and each sent exactly
+the documented body.
+
+To add your own job: add an entry to `client/job_catalog.py`, then run
+`make payloads`. It's in the test suite and the payload docs at once.

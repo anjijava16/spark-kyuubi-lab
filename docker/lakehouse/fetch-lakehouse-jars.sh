@@ -1,25 +1,33 @@
 #!/bin/bash
-# Downloads Delta Lake, Apache Iceberg and Apache Hudi jars that match the
-# lab's Spark version into /opt/lakehouse/<format>/ (a shared Docker volume
-# mounted read-only into kyuubi and the Spark containers).
+# Downloads optional connector jars that match the lab's Spark version into
+# /opt/lakehouse/<name>/ (a shared Docker volume mounted read-only into
+# kyuubi and the Spark containers):
 #
-# Why a volume instead of /opt/spark/jars: each format wants to own
-# spark_catalog / session extensions, so putting all three on every job's
-# classpath would make them fight. A job opts in to the format it needs by
-# putting /opt/lakehouse/<format>/* on its driver+executor classpath (the
-# --with flag of client/kyuubi_submit.py does that).
+#   delta    Delta Lake          iceberg  Apache Iceberg
+#   hudi     Apache Hudi         kafka    Spark's Kafka connector
 #
-# Maven does the downloading, so transitive runtime deps (e.g. Delta's
-# delta-storage) come along and a wrong version fails loudly here.
+# Why a volume instead of /opt/spark/jars: Delta, Iceberg and Hudi each want
+# to own spark_catalog / session extensions, so loading all of them into
+# every job makes them fight. A job opts in to what it needs by putting
+# /opt/lakehouse/<name>/* on its driver+executor classpath; the --with flag
+# of client/kyuubi_submit.py does that.
+#
+# Maven does the downloading, so transitive runtime deps come along (Delta's
+# delta-storage, Kafka's kafka-clients) and a wrong version fails loudly here.
 set -euo pipefail
 
 OUT=/opt/lakehouse
 SPARK_MINOR="${SPARK_VERSION%.*}"     # 4.1.3 -> 4.1
 SCALA=2.13
+# Already in the Spark image; second copies on the classpath cause conflicts.
+SPARK_PROVIDED="org.apache.spark,org.scala-lang,org.scala-lang.modules,org.apache.hadoop,org.slf4j,org.apache.logging.log4j,com.fasterxml.jackson.core,com.fasterxml.jackson.module,org.antlr"
+# Same idea for the Kafka connector, but we must keep org.apache.spark there
+# (spark-sql-kafka and spark-token-provider-kafka ARE what we want).
+KAFKA_PROVIDED="org.scala-lang,org.scala-lang.modules,org.slf4j,org.lz4,org.xerial.snappy,com.github.luben,com.google.code.findbugs"
 
 fetch() {
-  # fetch <dir-name> <transitive: yes|no> <group:artifact:version>
-  local name=$1 transitive=$2 coord=$3
+  # fetch <dir-name> <exclude-groups|"bundle"> <group:artifact:version>
+  local name=$1 excludes=$2 coord=$3
   local dir="$OUT/$name"
   if [[ -f "$dir/.coordinate" && "$(cat "$dir/.coordinate")" == "$coord" ]]; then
     echo ">> $name: $coord already present, skipping"
@@ -39,13 +47,10 @@ fetch() {
 EOF
   rm -rf "$dir.tmp" && mkdir -p "$dir.tmp"
   local extra=()
-  if [[ "$transitive" == "no" ]]; then
-    # shaded bundles: everything is already inside the one jar
-    extra+=(-DexcludeTransitive=true)
+  if [[ "$excludes" == "bundle" ]]; then
+    extra+=(-DexcludeTransitive=true)          # shaded: everything is in the one jar
   else
-    # Spark, Scala, Hadoop and logging are already in the Spark image;
-    # pulling second copies onto the classpath is how conflicts start.
-    extra+=(-DexcludeGroupIds=org.apache.spark,org.scala-lang,org.scala-lang.modules,org.apache.hadoop,org.slf4j,org.apache.logging.log4j,com.fasterxml.jackson.core,com.fasterxml.jackson.module,org.antlr)
+    extra+=(-DexcludeGroupIds="$excludes")
   fi
   mvn -B -q -f "$work/pom.xml" dependency:copy-dependencies \
       -DincludeScope=runtime -DoutputDirectory="$dir.tmp" "${extra[@]}"
@@ -55,10 +60,11 @@ EOF
 }
 
 echo ">> Spark $SPARK_VERSION (minor $SPARK_MINOR, Scala $SCALA)"
-fetch delta   yes "io.delta:delta-spark_${SPARK_MINOR}_${SCALA}:${DELTA_VERSION}"
-fetch iceberg no  "org.apache.iceberg:iceberg-spark-runtime-${SPARK_MINOR}_${SCALA}:${ICEBERG_VERSION}"
-fetch hudi    no  "org.apache.hudi:hudi-spark${SPARK_MINOR}-bundle_${SCALA}:${HUDI_VERSION}"
+fetch delta   "$SPARK_PROVIDED" "io.delta:delta-spark_${SPARK_MINOR}_${SCALA}:${DELTA_VERSION}"
+fetch iceberg bundle            "org.apache.iceberg:iceberg-spark-runtime-${SPARK_MINOR}_${SCALA}:${ICEBERG_VERSION}"
+fetch hudi    bundle            "org.apache.hudi:hudi-spark${SPARK_MINOR}-bundle_${SCALA}:${HUDI_VERSION}"
+fetch kafka   "$KAFKA_PROVIDED" "org.apache.spark:spark-sql-kafka-0-10_${SCALA}:${SPARK_VERSION}"
 
 chmod -R a+rX "$OUT"
-echo ">> lakehouse jars ready:"
+echo ">> connector jars ready:"
 find "$OUT" -name '*.jar' | sort
