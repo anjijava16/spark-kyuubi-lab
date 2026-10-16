@@ -109,6 +109,16 @@ CASES = [
          resource=f"{PY}/13_postgres_to_postgres.py", remote=True,
          after=["pg-file-to-pg"], marker="POSTGRES TO POSTGRES OK"),
 
+    # ---- ai: pgvector + jev inside Postgres, driven by Spark ---------------
+    dict(name="pgvector-embeddings", group="ai",
+         note="Spark embeds products -> pgvector (HNSW) in Postgres, checks Spark == lab_embed(), semantic search",
+         resource=f"{PY}/18_pgvector_embeddings.py", remote=True,
+         marker="PGVECTOR EMBEDDINGS OK"),
+    dict(name="jev-tickets-to-lake", group="ai",
+         note="one JDBC query: jev_choice/jev_prob/jev_score_norm + nearest KB article -> Parquet, Hive, Postgres",
+         resource=f"{PY}/19_jev_tickets_to_lake.py", remote=True,
+         after=["pgvector-embeddings"], marker="JEV TICKETS TO LAKE OK"),
+
     # ---- lakehouse table formats -------------------------------------------
     dict(name="iceberg", group="lakehouse",
          note="Iceberg in Hive Metastore: MERGE, DELETE, schema+partition evolution, time travel",
@@ -208,7 +218,7 @@ CASES = [
          marker="VERIFY STREAMING OK"),
 ]
 
-GROUPS = ["core", "formats", "hive", "postgres", "lakehouse", "orders", "streaming"]
+GROUPS = ["core", "formats", "hive", "postgres", "ai", "lakehouse", "orders", "streaming"]
 
 # Examples that are documented (and in the payload file) but not run by the
 # test suite, because they run until stopped.

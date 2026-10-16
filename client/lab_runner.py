@@ -52,6 +52,39 @@ def skip_reason(c):
     return None
 
 
+# Lines that mark the real failure. When a PySpark job dies, the end of the
+# log is Spark shutting down (stack traces from shutdown hooks, "BlockManager
+# stopped" ...), which says nothing about why. The cause is earlier.
+_CAUSE = ("Traceback (most recent call last)", "Exception:", "Error:", "Caused by:",
+          "AnalysisException", "StreamingQueryException", "Py4JJavaError", "FAILED:")
+_NOISE = ("ShutdownHookManager", " WARN ", "INFO ")
+
+
+def error_excerpt(log, max_lines=40):
+    """The part of a driver log that explains a failure: the Python traceback
+    (with the Java error inside it) and the first 'Caused by' lines."""
+    lines = [l.rstrip() for l in log if l.strip()]
+    out, i = [], 0
+    while i < len(lines) and len(out) < max_lines:
+        l = lines[i]
+        if "Traceback (most recent call last)" in l:
+            # copy the traceback up to and including the final 'SomethingError: ...' line
+            j = i
+            while j < len(lines) and len(out) < max_lines:
+                out.append(lines[j])
+                if j > i and not lines[j].startswith((" ", "\t")) and ":" in lines[j] \
+                        and "Traceback" not in lines[j]:
+                    break
+                j += 1
+            i = j + 1
+            continue
+        if any(m in l for m in _CAUSE) and not any(n in l for n in _NOISE):
+            if l not in out:
+                out.append(l)
+        i += 1
+    return out
+
+
 def run_case(c, run_id, kyuubi=None, out=print, max_wait=900, extra_args=None,
              conf_overrides=None, name_prefix="lab-", on_submit=None):
     """Run one catalog entry. Returns a dict:
@@ -106,4 +139,5 @@ def run_case(c, run_id, kyuubi=None, out=print, max_wait=900, extra_args=None,
     if not ok and not detail:
         detail = f"expected {expect}, got {state}"
     return dict(name=c["name"], ok=ok, state=state, expect=expect, batch_id=batch_id,
-                secs=int(time.time() - t0), detail=detail, log=log)
+                secs=int(time.time() - t0), detail=detail, log=log,
+                error=[] if ok else error_excerpt(log))

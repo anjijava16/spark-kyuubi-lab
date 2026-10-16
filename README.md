@@ -12,7 +12,7 @@ make test      # run every sample job through Kyuubi, print pass/fail
 make sql       # SQL shell over Kyuubi JDBC
 ```
 
-What the 34 tests cover (run a group with `make test-<group>`):
+What the 36 tests cover (run a group with `make test-<group>`):
 
 | group | examples |
 |---|---|
@@ -21,6 +21,7 @@ What the 34 tests cover (run a group with `make test-<group>`):
 | postgres | file → Postgres, Postgres → files (parallel + pushdown reads), Postgres → Postgres upsert |
 | lakehouse (`make test-lake`) | Iceberg, Delta Lake and Hudi: MERGE, deletes, time travel, schema evolution, CDC/incremental |
 | hive | Hive SQL ELT: external TEXTFILE, ORC, partitioned Parquet, RCFile, CTAS, views |
+| ai | Spark writes pgvector embeddings into Postgres; jev routes tickets in plain-language SQL; results land in Parquet/Hive |
 | orders | real-time order tracking: streaming into an Iceberg event log, Delta status table and Postgres, plus an SLA report |
 | streaming | Kafka producer → Spark consumer, Spark → Kafka publisher (stream and batch), windowed metrics, file-event streams |
 
@@ -32,8 +33,8 @@ Airflow and Jupyter are optional too, and both go through Kyuubi rather
 than around it:
 
 ```bash
-make airflow     # Airflow 3 on http://localhost:8085 (no login), 15 DAGs in airflow/dags
-make jupyter     # JupyterLab on http://localhost:8888 (no token), 13 notebooks in notebooks/
+make airflow     # Airflow 3 on http://localhost:8085 (no login), 17 DAGs in airflow/dags
+make jupyter     # JupyterLab on http://localhost:8888 (no token), 14 notebooks in notebooks/
 ```
 
 The DAGs cover every test group plus real pipelines: a daily lakehouse ELT
@@ -49,6 +50,17 @@ streams, always-on streams, triggering DAGs, and an all-jobs run.
 make airflow-run DAG=kyuubi_tests_all
 make airflow-run DAG=kyuubi_run_any_job CONF='{"job": "iceberg"}'
 ```
+
+Postgres has **pgvector** and **jev** ([pg-jev](https://github.com/realZachi/pg-jev))
+in the `shop` database, so this works as is:
+
+```sql
+SELECT * FROM people WHERE jev(people, 'the name is European');
+SELECT title FROM kb_articles ORDER BY embedding <=> lab_embed('suspicious login alert') LIMIT 3;
+```
+
+`make ai-sql` runs all the examples. jev uses an offline stand-in (`jev-local`)
+until you put a TypeSafe key in `.env`; see Understand.md section 28.
 
 Every job's CLI command, REST payload and curl example is in
 **All_execution_payload.md** (and `.json`), along with how to trigger each

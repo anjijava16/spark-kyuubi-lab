@@ -99,7 +99,7 @@ def run(name, run_id=None, quiet=True, extra_args=None, conf=None, max_wait=900)
                             conf_overrides=conf, max_wait=max_wait, name_prefix="nb-")
     print(f"{'PASS' if r['ok'] else 'FAIL'} {r['state']} in {r['secs']}s  batch={r['batch_id']}")
     if not r["ok"]:
-        print("\n".join(r["log"][-25:]))
+        print("\n".join(r.get("error") or r["log"][-25:]))
         raise RuntimeError(f"{name} failed: {r['detail']}")
     return r
 

@@ -41,6 +41,7 @@ there and how to drive it.
 25. [Airflow: DAGs that run jobs through Kyuubi](#25-airflow-dags-that-run-jobs-through-kyuubi)
 26. [Jupyter: notebooks that call Kyuubi](#26-jupyter-notebooks-that-call-kyuubi)
 27. [Airflow and Jupyter: troubleshooting](#27-airflow-and-jupyter-troubleshooting)
+28. [Postgres AI: pgvector and jev](#28-postgres-ai-pgvector-and-jev)
 
 ---
 
@@ -337,7 +338,9 @@ spark-kyuubi-lab/
 │   ├── common/fetch-s3a-jars.sh  picks hadoop-aws + SDK matching the Hadoop in the image
 │   ├── spark/Dockerfile          targets: spark-base (master/worker/history), kyuubi
 │   ├── storage-init/init-buckets.sh  buckets + upload, via the AWS CLI
-│   ├── postgres/                 init-shop.sh + shop-schema.sql (app DB "shop")
+│   ├── postgres/                 Dockerfile (PG 16 + pgvector + jev), init-shop.sh, shop-schema.sql,
+│   │                             ai-extensions.sql, ai-schema.sql, examples/ai_examples.sql
+│   ├── jev-local/jev_local.py    offline stand-in for the Jev API (word matching, not a model)
 │   ├── lakehouse/fetch-lakehouse-jars.sh  Delta/Iceberg/Hudi/Kafka-connector jars -> shared volume
 │   ├── kafka/create-topics.sh    the lab's Kafka topics (optional Kafka add-on)
 │   ├── airflow/Dockerfile        Airflow 3.3 + PyHive, kafka-python, boto3 (optional)
@@ -367,6 +370,8 @@ spark-kyuubi-lab/
 │   │   ├── 15_delta_demo.py           --with delta
 │   │   ├── 16_hudi_demo.py            --with hudi
 │   │   ├── 17_hive_elt.py             Hive SQL ELT over TEXTFILE/ORC/PARQUET/RCFILE
+│   │   ├── 18_pgvector_embeddings.py  Spark -> pgvector embeddings + semantic search
+│   │   ├── 19_jev_tickets_to_lake.py  jev + pgvector in one JDBC query -> Parquet/Hive/Postgres
 │   │   ├── order_tracking/            20 generator, 21 stream, 22 report, README
 │   │   ├── streaming/                 30-35 Kafka + file-event streams, 39 verify, stream_common.py
 │   │   └── libs/text_utils.py + text_utils.zip
@@ -387,9 +392,10 @@ spark-kyuubi-lab/
 │   ├── kafka_live_streams.py     start always-on streams, feed, check, stop
 │   ├── kyuubi_sql_reporting.py   SQL-only pipeline over Kyuubi JDBC
 │   ├── file_event_pipeline.py    file drops -> sensor -> file stream -> SQL
-│   └── order_tracking_project.py the order tracking project as a DAG
+│   ├── order_tracking_project.py the order tracking project as a DAG
+│   └── postgres_ai_pipeline.py   pgvector + jev end to end
 │
-├── notebooks/                    00-12, mounted into JupyterLab
+├── notebooks/                    00-13, mounted into JupyterLab
 │
 ├── data/                         uploaded to s3a://data/input/
 │   ├── sample.txt
@@ -957,6 +963,19 @@ docker compose exec postgres psql -U hive -d metastore -c 'select "TBL_NAME","TB
 ```
 
 ---
+
+**A test fails and the log tail is only Spark shutting down** (`ShutdownHookManager`
+stack traces, "BlockManager stopped"). That's normal: when a PySpark job dies,
+the last lines are always the shutdown. The cause is earlier in the log.
+`make test` now prints a "why it failed" block with the Python traceback and the
+Java error inside it. For any batch:
+
+```bash
+docker compose --profile tools run --rm kyuubi-client \
+  python client/kyuubi_submit.py --url http://kyuubi:10099 log <batch-id> --errors
+```
+
+Drop `--errors` to get the whole log (all pages, not just the first 500 lines).
 
 ## 14. From this laptop to Cloudera / Nexus
 
@@ -1546,8 +1565,8 @@ the documented body.
 To add your own job: add an entry to `client/job_catalog.py`, then run
 `make payloads`. It's in the test suite and the payload docs at once.
 
-The same two files also list the 15 Airflow DAGs (trigger with make, the
-Airflow CLI, Airflow's REST API or Python) and the 13 notebooks, with the
+The same two files also list the 17 Airflow DAGs (trigger with make, the
+Airflow CLI, Airflow's REST API or Python) and the 14 notebooks, with the
 jobs each one runs. That part comes from `client/orchestration.py`, and
 `make payloads` refuses to write the files if a DAG id, notebook or job
 name in there doesn't exist.
@@ -1628,6 +1647,7 @@ one failed check fails the task.
 | `kyuubi_sql_reporting` | SQL only: branch on whether `demo.orders` exists, CTAS into Parquet and ORC, a view, checks, copies into Iceberg and Delta, upsert into Postgres |
 | `file_event_pipeline` | JSON files dropped into RustFS, a sensor that waits for them, the file-source stream, SQL straight on the Parquet folder, and a second run that processes nothing |
 | `order_tracking_project` | the three-wave project from section 20, with SQL on the Delta status table and the Iceberg event log |
+| `postgres_ai_pipeline` | pgvector + jev (section 28): Spark embeds products, semantic search in Postgres, jev routes tickets into Parquet/Hive/Postgres, Kyuubi SQL report |
 
 The test DAGs are generated from the job catalog, so a job you add there
 shows up as a task without touching Airflow. Dependencies follow each job's
@@ -1739,6 +1759,7 @@ engine, which takes 20-40 seconds; after that queries are quick.
 | 10_always_on_streams | three always-on streams: start, feed, watch Postgres and Kafka, stop |
 | 11_airflow_from_notebook | list DAGs, trigger them, read task states (needs `make airflow`) |
 | 12_end_to_end_all | every catalog job with a pass/fail table and chart |
+| 13_pgvector_and_jev | jev queries on people/tickets/products, Spark-written embeddings, semantic search, routing landed in the lake |
 
 Notebooks 06, 07 and 10 need Kafka. 12 skips the Kafka jobs if Kafka isn't
 there, and the JVM jobs until you `make jars && make upload`.
@@ -1803,3 +1824,178 @@ scheduler, triggering DAGs whose tasks then submitted to the fake Kyuubi.
 What the fakes can't prove is Spark's own behaviour: that part was tested
 earlier with PySpark 4.1.3 (see section 23), and `kyuubi_tests_all` is the
 quickest way to confirm it on your machine.
+
+
+---
+
+## 28. Postgres AI: pgvector and jev
+
+The lab's Postgres now carries two extensions in the `shop` database:
+
+- **pgvector** gives you a `vector(n)` column type, distance operators
+  (`<=>` cosine, `<->` L2, `<#>` negative inner product) and HNSW / IVFFlat
+  indexes. Semantic search becomes `ORDER BY embedding <=> query_vector LIMIT k`.
+- **jev** ([github.com/realZachi/pg-jev](https://github.com/realZachi/pg-jev))
+  lets you write conditions in plain language. `jev(people, 'the name is European')`
+  is an ordinary boolean function: Postgres sends each row (as JSON, 20 per
+  request) to a Jev-compatible API and gets a probability back. There's also
+  `jev_prob`, `jev_choice`, `jev_score`, `jev_score_norm`, `jev_confidence`,
+  `jev_eval` and `jev_stats`.
+
+Neither one goes through Kyuubi, because they run inside Postgres. Spark uses
+them over plain JDBC, and those Spark jobs do go through Kyuubi.
+
+### What changed in the stack
+
+| piece | before | now |
+|---|---|---|
+| Postgres image | `postgres:16-alpine` | built from `docker/postgres/Dockerfile`: `postgres:16-bookworm` + `postgresql-16-pgvector` + `postgresql-plpython3-16` + jev |
+| Postgres volume | `pg-data` | `pg16-data` |
+| new service | | `jev-local`, an offline stand-in for the Jev API |
+| pg-init | shop tables, Airflow DB | also `CREATE EXTENSION vector`, `CREATE EXTENSION jev CASCADE`, `lab_embed()`, sample tables, `jev.api_url` |
+
+Why Debian: jev is PL/Python, and the alpine image doesn't ship `plpython3u`.
+Why a new volume: alpine (musl) and Debian (glibc) sort text differently, so
+reusing the old data directory would leave text indexes in the metastore
+silently wrong. A fresh volume avoids that. If you want your old tables:
+
+```bash
+make pg-migrate     # dumps the old pg-data volume with an alpine container, restores into pg16-data
+```
+
+Otherwise `make up` just starts with empty databases. The Hive metastore
+re-initialises itself, and the jobs recreate their tables (`make test`).
+
+jev is fetched at build time from `JEV_REPO` at the pinned commit `JEV_REF`
+(both in `.env`). To use your own fork or a newer commit, change them and
+run `docker compose build postgres pg-init && make up`.
+
+### Where jev's answers come from
+
+jev calls whatever `jev.api_url` points at. pg-init sets it per database from
+`JEV_API_URL` in `.env`:
+
+| setting | what answers | cost / privacy |
+|---|---|---|
+| `http://jev-local:8787/v1/systemone` (default) | `docker/jev-local/jev_local.py`: word matching plus a small lexicon for the sample data | free, nothing leaves Docker, **not a model**: answers are rough |
+| `https://api.typesafe.ai/v1/systemone` + `TYPESAFE_API_KEY` | TypeSafe's Jev model | billed per token; rows are sent to TypeSafe |
+| any Jev-compatible server (stuntd, laya-server) | that server | your call |
+
+To switch to the real model:
+
+```bash
+# .env
+JEV_API_URL=https://api.typesafe.ai/v1/systemone
+TYPESAFE_API_KEY=ts-...
+make ai-reset-jev      # recreates Postgres with the key in its environment, re-runs pg-init
+```
+
+pg-init also sets `jev.notices = off` and `jev.max_rows_per_statement = 5000`
+(a spend guard) on the database. Override either one per session with `SET jev....`.
+Spark can set them per connection too: job 19 takes `--jev-api-url`, which
+it passes as a JDBC `sessionInitStatement`.
+
+### The sample tables
+
+| table | rows | for |
+|---|---|---|
+| `people` | 20 | `jev(people, 'the name is European')`, `'works in healthcare'` |
+| `tickets` | 20 | `jev_prob(..., 'the customer is angry')`, `jev_choice(..., 'which team should handle this?', ...)` |
+| `products` | 20 | `jev_score(..., 'how luxurious is this product?', ARRAY['budget','mid-range','premium','luxury'])` |
+| `kb_articles` | 12 | help articles with `embedding vector(512)`, embedded in SQL by pg-init |
+| `product_embeddings` | written by Spark | `vector(512)` + HNSW index, filled by job 18 |
+| `ticket_routing` | written by Spark | jev routing results, filled by job 19 |
+
+Your four queries run as they are:
+
+```sql
+SELECT * FROM people WHERE jev(people, 'the name is European');
+
+SELECT subject, jev_prob(tickets, 'the customer is angry') AS p
+FROM tickets ORDER BY p DESC LIMIT 20;
+
+SELECT jev_choice(tickets, 'which team should handle this?',
+                  ARRAY['billing', 'technical', 'security', 'sales']) AS team, count(*)
+FROM tickets GROUP BY 1;
+
+SELECT name, jev_score(products, 'how luxurious is this product?',
+                       ARRAY['budget', 'mid-range', 'premium', 'luxury']) AS luxury
+FROM products ORDER BY luxury DESC;
+```
+
+`make ai-sql` runs those plus about twenty more:
+- jev composed with ordinary predicates
+- jev on a view, so only some columns get sent
+- `jev_eval`, `jev_stats`
+- pgvector search, `EXPLAIN` showing the HNSW index, all three distance operators
+- one query that routes every ticket with jev and picks a help article with pgvector
+
+The same file is printed at the end of `All_execution_payload.md`.
+
+### Embeddings: `lab_embed()`
+
+To keep the lab offline, the vectors come from `lab_embed(text)`, a
+PL/Python function using the "hashing trick". Words and word pairs, with
+stop words dropped and simple endings cut, are hashed into 512 signed
+buckets, and the vector is normalised. **It is not a language model.** Two
+texts are close when they share words. "refund a double charge" finds "How
+refunds work"; "money back" doesn't, because no words overlap.
+
+Job 18 computes the same function in Spark and checks that its vectors match
+Postgres's to within 1e-4 cosine distance (in testing the difference was 0).
+So vectors written by Spark and query vectors made in SQL live in the same
+space. For real semantic search, write vectors from a model (sentence-transformers,
+an embeddings API) into the same `vector` columns, at whatever dimension the
+model uses, and embed queries with that same model. The tables, the
+`<=>` queries and the HNSW index all stay the same.
+
+### The Spark side (group `ai`)
+
+| job | what it does |
+|---|---|
+| `pgvector-embeddings` (18) | reads `products` over JDBC, embeds them in a Python UDF, lands text in a stage table, then `INSERT ... embedding::vector ... ON CONFLICT` into `product_embeddings`; compares with `lab_embed()`; runs three semantic searches by pushing `ORDER BY embedding <=> lab_embed(...) LIMIT 3` down to Postgres |
+| `jev-tickets-to-lake` (19) | one JDBC query: `jev_choice` (team), `jev_prob` (angry), `jev_score_norm` (urgency) and a correlated pgvector lookup for the best help article per ticket. Writes to Parquet `s3a://data/output/ai/ticket_routing`, Hive `ai.ticket_routing` and Postgres `ticket_routing`. Checks every team is a valid option and every probability is in 0..1 |
+
+Two details that matter. JDBC can't write a `vector` column directly, which
+is why job 18 goes through a stage table and a cast. And jev must see a real
+table or view alias (`jev(t, ...)` with `FROM tickets t`); Spark wrapping the
+query in its own subquery doesn't get in the way.
+
+Run them:
+
+```bash
+make test-ai
+make airflow-run DAG=postgres_ai_pipeline CONF='{"search": "luxury gold gift"}'
+```
+
+Or open notebook `13_pgvector_and_jev`. Afterwards Kyuubi SQL can read the
+lake copy: `SELECT team, count(*) FROM ai.ticket_routing GROUP BY team`.
+
+### Limits worth knowing
+
+- jev is a full scan by design. Every row that reaches `jev()` is one
+  judgment, so put cheap predicates first (`WHERE age > 40 AND jev(...)`) and
+  use `LIMIT`. Answers are cached per Postgres session, so repeating a query
+  in the same session is free.
+- With the TypeSafe endpoint, row contents leave your machine. Use a view
+  with only the columns the question needs.
+- `CREATE EXTENSION jev` needs a superuser (plpython3u is untrusted). pg-init
+  runs it as `hive`; the `app` user just calls the functions.
+- `jev-local` exists to show the plumbing working, not answer quality. Some
+  answers are plainly wrong: "Absolutely unacceptable service" goes to
+  `technical` because "export is broken" matches. Judge jev itself against
+  the real API.
+
+### How this was checked
+
+pgvector 0.8.7 and jev 0.2.1 at the pinned commit were installed into a
+local PostgreSQL 16 with plpython3u:
+- `init-shop.sh` ran twice on a fresh cluster (the second run as an idempotency check).
+- All of `ai_examples.sql` ran without errors, and `EXPLAIN` showed the HNSW index in use.
+- Jobs 18 and 19 ran on PySpark 4.1.3 against that database, with the real
+  Postgres JDBC driver and jev-local.
+- `postgres_ai_pipeline` and `kyuubi_tests_ai` ran under `airflow dags test`,
+  and notebook 13 ran top to bottom.
+
+Two things weren't checked: building the Docker image itself (no Docker
+daemon was available) and the TypeSafe endpoint (no key).

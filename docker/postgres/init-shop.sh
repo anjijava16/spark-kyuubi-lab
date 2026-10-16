@@ -1,6 +1,7 @@
 #!/bin/sh
-# Creates the "shop" database + "app" user used by the Spark jobs, then
-# seeds a customers table. Safe to run any number of times.
+# Creates the "shop" database + "app" user used by the Spark jobs, seeds the
+# customers table, installs pgvector + jev and the AI sample tables, and
+# creates Airflow's database. Safe to run any number of times.
 # The metastore keeps its own database ("metastore"); jobs never touch it.
 set -eu
 
@@ -30,6 +31,13 @@ SQL
 
 echo ">> creating tables in shop"
 PGUSER=app PGPASSWORD=apppass PGDATABASE=shop psql -v ON_ERROR_STOP=1 -f /sql/shop-schema.sql
+
+echo ">> pgvector + jev in shop (superuser), jev.api_url = ${JEV_API_URL:-http://jev-local:8787/v1/systemone}"
+PGDATABASE=shop psql -v ON_ERROR_STOP=1 \
+  -v jev_api_url="${JEV_API_URL:-http://jev-local:8787/v1/systemone}" -f /sql/ai-extensions.sql
+
+echo ">> AI tables in shop (people, tickets, products, kb_articles, product_embeddings, ticket_routing)"
+PGUSER=app PGPASSWORD=apppass PGDATABASE=shop psql -v ON_ERROR_STOP=1 -q -f /sql/ai-schema.sql
 
 echo ">> shop database ready:"
 PGUSER=app PGPASSWORD=apppass PGDATABASE=shop psql -c '\dt'

@@ -34,6 +34,7 @@ GROUP_TITLES = {
     "formats": "File formats: CSV, Parquet, ORC, JSON, Avro",
     "hive": "Hive ELT: TEXTFILE, ORC, Parquet, RCFile tables",
     "postgres": "Postgres: file to table, table to file, table to table",
+    "ai": "AI in Postgres: pgvector embeddings and jev plain-language SQL, driven by Spark",
     "lakehouse": "Lakehouse: Iceberg, Delta Lake, Hudi",
     "orders": "Project: order tracking (file stream into Iceberg, Delta, Postgres)",
     "streaming": "Streaming: Kafka producer/consumer and file events",
@@ -337,6 +338,25 @@ Delta + Iceberg). Notebook 11 triggers the Airflow DAGs.
 """
 
 
+AI_SQL = "docker/postgres/examples/ai_examples.sql"
+AI_INTRO = """## Postgres AI SQL: pgvector + jev
+
+The `shop` database has two extensions: **pgvector** (vector column, `<=>` cosine,
+`<->` L2, `<#>` inner product, HNSW index) and **jev** (github.com/realZachi/pg-jev:
+plain-language `jev()`, `jev_prob()`, `jev_choice()`, `jev_score()`). These run in
+Postgres itself, not through Kyuubi; the Spark side is the `ai` jobs above.
+jev's endpoint is `jev.api_url` (offline `jev-local` by default, TypeSafe with a key).
+
+```bash
+make ai-sql                                     # run all of it
+make psql                                       # or paste a block
+psql postgres://app:apppass@localhost:15432/shop   # from your Mac
+```
+
+Every statement in `docker/postgres/examples/ai_examples.sql`:
+"""
+
+
 def main():
     check_orchestration()
     catalog = [entry(c) for c in CASES] + [entry(c, manual=True) for c in MANUAL]
@@ -345,7 +365,9 @@ def main():
     doc = {"generated_from": "client/job_catalog.py + client/orchestration.py",
            "kyuubi_rest": f"{URL}/api/v1/batches", "airflow": AIRFLOW, "jupyter": JUPYTER,
            "run_id_placeholder": RUN_ID, "groups": GROUPS, "jobs": catalog,
-           "airflow_dags": dags, "notebooks": notebooks}
+           "airflow_dags": dags, "notebooks": notebooks,
+           "postgres_ai_sql": {"file": AI_SQL, "run": "make ai-sql",
+                               "sql": open(os.path.join(ROOT, AI_SQL)).read()}}
     with open(os.path.join(ROOT, "All_execution_payload.json"), "w") as f:
         json.dump(doc, f, indent=2)
         f.write("\n")
@@ -355,7 +377,8 @@ def main():
         jobs = [e for e in catalog if e["group"] == g]
         md.append(f"- [{GROUP_TITLES[g]}](#{g}) ({len(jobs)})")
     md += [f"- [Airflow DAGs](#airflow-dags) ({len(dags)})",
-           f"- [Jupyter notebooks](#jupyter-notebooks) ({len(notebooks)})", ""]
+           f"- [Jupyter notebooks](#jupyter-notebooks) ({len(notebooks)})",
+           "- [Postgres AI SQL: pgvector + jev](#postgres-ai-sql-pgvector--jev)", ""]
     n = 0
     for g in GROUPS:
         md += [f'<a id="{g}"></a>', f"## {GROUP_TITLES[g]}", ""]
@@ -369,6 +392,7 @@ def main():
     md += [NB_INTRO]
     for i, e in enumerate(notebooks, 1):
         md += md_notebook(e, i)
+    md += [AI_INTRO, "```sql", open(os.path.join(ROOT, AI_SQL)).read().rstrip(), "```", ""]
     with open(os.path.join(ROOT, "All_execution_payload.md"), "w") as f:
         f.write("\n".join(md))
     print(f"wrote All_execution_payload.md and .json: {len(catalog)} entries "

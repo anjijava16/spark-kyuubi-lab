@@ -6,6 +6,7 @@ Test-suite DAGs generated from client/job_catalog.py - the same jobs that
   kyuubi_tests_formats     CSV -> Parquet -> ORC -> JSON -> Avro -> CSV round trip
   kyuubi_tests_hive        Hive SQL ELT: TEXTFILE -> ORC -> partitioned Parquet -> RCFILE
   kyuubi_tests_postgres    file -> Postgres, Postgres -> files, Postgres -> Postgres
+  kyuubi_tests_ai          pgvector embeddings from Spark + jev routing -> lake
   kyuubi_tests_lakehouse   Iceberg, Delta, Hudi
   kyuubi_tests_orders      real-time order tracking project (waves + streams + report)
   kyuubi_tests_streaming   Kafka producer -> Spark consumers -> Spark publishes, file events
@@ -27,6 +28,7 @@ GROUP_DOC = {
     "formats": "file -> file format conversions: CSV, Parquet, ORC, JSON, Avro",
     "hive": "Hive ELT: external TEXTFILE -> ORC -> partitioned PARQUET -> RCFILE archive -> summary",
     "postgres": "file -> Postgres, Postgres -> Parquet/ORC/CSV, Postgres -> Postgres upsert",
+    "ai": "pgvector: Spark writes embeddings, semantic search; jev: plain-language routing/scoring via one JDBC query",
     "lakehouse": "Iceberg (MERGE, snapshots), Delta (MERGE, time travel, CDF), Hudi (upsert, incremental)",
     "orders": "real-time order tracking: generate waves, stream into Iceberg + Delta + Postgres, SLA report",
     "streaming": "Kafka -> Spark -> Kafka/Delta/Postgres, Spark batch -> Kafka, file-event streaming",

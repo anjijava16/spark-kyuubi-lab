@@ -80,9 +80,15 @@ def main():
                      out=print if a.show_logs else (lambda _line: None))
         outcome[name] = r["ok"]
         if not r["ok"]:
+            if r.get("error"):
+                print("    ---- why it failed (from the driver log) ----")
+                for line in r["error"]:
+                    print("    " + line)
             print("    ---- last log lines ----")
-            for line in [x for x in r["log"] if x.strip()][-15:]:
+            for line in [x for x in r["log"] if x.strip()][-8:]:
                 print("    " + line)
+            if r["batch_id"] not in ("-", "(local)"):
+                print(f"    full log: python client/kyuubi_submit.py log {r['batch_id']}")
         print(f"    -> {r['state']} in {r['secs']}s ({'PASS' if r['ok'] else 'FAIL'})\n")
         results.append((name, r["batch_id"], r["state"], expect, r["secs"],
                         "" if r["ok"] else r["detail"]))

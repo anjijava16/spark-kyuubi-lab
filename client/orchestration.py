@@ -63,6 +63,12 @@ DAGS = [
               "Parquet silver -> SQL on the folder -> second run processes nothing (checkpoint).",
          jobs=["file-drop-produce", "file-drop-stream"], uses=["rustfs", "kyuubi-rest", "kyuubi-jdbc"],
          conf={"orders": 20, "files": 3}),
+    dict(dag_id="postgres_ai_pipeline", file="postgres_ai_pipeline.py",
+         what="pgvector + jev: check the extensions, Spark embeds products into pgvector, semantic search "
+              "in Postgres, one JDBC query routes tickets with jev_choice/jev_prob/jev_score_norm + nearest "
+              "KB article into Parquet/Hive/Postgres, Kyuubi SQL report, escalation list.",
+         jobs=["pgvector-embeddings", "jev-tickets-to-lake"], uses=["postgres", "kyuubi-rest", "kyuubi-jdbc"],
+         conf={"search": "warm clothes for cold winter"}),
     dict(dag_id="order_tracking_project", file="order_tracking_project.py",
          what="Order tracking project: three waves, each streamed into Iceberg + Delta + Postgres, "
               "SLA report, then SQL on the Delta status table and the Iceberg event log.",
@@ -109,4 +115,8 @@ NOTEBOOKS = [
     dict(file="12_end_to_end_all.ipynb",
          what="every catalog job, group by group, with a pass/fail table and chart",
          jobs=[c["name"] for c in CASES], uses=["kyuubi-rest"]),
+    dict(file="13_pgvector_and_jev.ipynb",
+         what="jev(), jev_prob(), jev_choice(), jev_score() on people/tickets/products; Spark-written pgvector "
+              "embeddings and semantic search; jev + pgvector routing landed in the lake",
+         jobs=["pgvector-embeddings", "jev-tickets-to-lake"], uses=["postgres", "kyuubi-rest", "kyuubi-jdbc"]),
 ]

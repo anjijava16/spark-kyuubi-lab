@@ -9,6 +9,7 @@
     "formats",
     "hive",
     "postgres",
+    "ai",
     "lakehouse",
     "orders",
     "streaming"
@@ -418,6 +419,61 @@
       },
       "curl": "curl -s -X POST http://localhost:10099/api/v1/batches \\\n  -u anji: -H 'Content-Type: application/json' \\\n  -d @- <<'JSON'\n{\n  \"batchType\": \"SPARK\",\n  \"name\": \"pg-pg-to-pg\",\n  \"className\": \"org.apache.spark.deploy.PythonRunner\",\n  \"resource\": \"s3a://jobs/python/13_postgres_to_postgres.py\",\n  \"conf\": {},\n  \"args\": []\n}\nJSON",
       "kyuubi_ctl_yaml": "apiVersion: v1\nusername: anji\nrequest:\n  batchType: SPARK\n  name: pg-pg-to-pg\n  resource: s3a://jobs/python/13_postgres_to_postgres.py\n  className: org.apache.spark.deploy.PythonRunner\n  args:\n    []\n  configs:\n    {}\noptions:\n  verbose: true"
+    },
+    {
+      "name": "pgvector-embeddings",
+      "group": "ai",
+      "kind": "batch",
+      "description": "Spark embeds products -> pgvector (HNSW) in Postgres, checks Spark == lab_embed(), semantic search",
+      "in_test_suite": true,
+      "success_marker": "PGVECTOR EMBEDDINGS OK",
+      "expected_state": "FINISHED",
+      "connectors": "",
+      "cli": "python client/kyuubi_submit.py --url http://localhost:10099 submit s3a://jobs/python/18_pgvector_embeddings.py --remote --name pgvector-embeddings",
+      "rest": {
+        "method": "POST",
+        "url": "http://localhost:10099/api/v1/batches",
+        "content_type": "application/json",
+        "body": {
+          "batchType": "SPARK",
+          "name": "pgvector-embeddings",
+          "className": "org.apache.spark.deploy.PythonRunner",
+          "resource": "s3a://jobs/python/18_pgvector_embeddings.py",
+          "conf": {},
+          "args": []
+        }
+      },
+      "curl": "curl -s -X POST http://localhost:10099/api/v1/batches \\\n  -u anji: -H 'Content-Type: application/json' \\\n  -d @- <<'JSON'\n{\n  \"batchType\": \"SPARK\",\n  \"name\": \"pgvector-embeddings\",\n  \"className\": \"org.apache.spark.deploy.PythonRunner\",\n  \"resource\": \"s3a://jobs/python/18_pgvector_embeddings.py\",\n  \"conf\": {},\n  \"args\": []\n}\nJSON",
+      "kyuubi_ctl_yaml": "apiVersion: v1\nusername: anji\nrequest:\n  batchType: SPARK\n  name: pgvector-embeddings\n  resource: s3a://jobs/python/18_pgvector_embeddings.py\n  className: org.apache.spark.deploy.PythonRunner\n  args:\n    []\n  configs:\n    {}\noptions:\n  verbose: true"
+    },
+    {
+      "name": "jev-tickets-to-lake",
+      "group": "ai",
+      "kind": "batch",
+      "description": "one JDBC query: jev_choice/jev_prob/jev_score_norm + nearest KB article -> Parquet, Hive, Postgres",
+      "in_test_suite": true,
+      "run_after": [
+        "pgvector-embeddings"
+      ],
+      "success_marker": "JEV TICKETS TO LAKE OK",
+      "expected_state": "FINISHED",
+      "connectors": "",
+      "cli": "python client/kyuubi_submit.py --url http://localhost:10099 submit s3a://jobs/python/19_jev_tickets_to_lake.py --remote --name jev-tickets-to-lake",
+      "rest": {
+        "method": "POST",
+        "url": "http://localhost:10099/api/v1/batches",
+        "content_type": "application/json",
+        "body": {
+          "batchType": "SPARK",
+          "name": "jev-tickets-to-lake",
+          "className": "org.apache.spark.deploy.PythonRunner",
+          "resource": "s3a://jobs/python/19_jev_tickets_to_lake.py",
+          "conf": {},
+          "args": []
+        }
+      },
+      "curl": "curl -s -X POST http://localhost:10099/api/v1/batches \\\n  -u anji: -H 'Content-Type: application/json' \\\n  -d @- <<'JSON'\n{\n  \"batchType\": \"SPARK\",\n  \"name\": \"jev-tickets-to-lake\",\n  \"className\": \"org.apache.spark.deploy.PythonRunner\",\n  \"resource\": \"s3a://jobs/python/19_jev_tickets_to_lake.py\",\n  \"conf\": {},\n  \"args\": []\n}\nJSON",
+      "kyuubi_ctl_yaml": "apiVersion: v1\nusername: anji\nrequest:\n  batchType: SPARK\n  name: jev-tickets-to-lake\n  resource: s3a://jobs/python/19_jev_tickets_to_lake.py\n  className: org.apache.spark.deploy.PythonRunner\n  args:\n    []\n  configs:\n    {}\noptions:\n  verbose: true"
     },
     {
       "name": "iceberg",
@@ -1226,6 +1282,8 @@
         "pg-file-to-pg",
         "pg-pg-to-files",
         "pg-pg-to-pg",
+        "pgvector-embeddings",
+        "jev-tickets-to-lake",
         "iceberg",
         "delta",
         "hudi",
@@ -1359,6 +1417,29 @@
       "rest_curl": "TOKEN=$(curl -s http://localhost:8085/auth/token | python3 -c 'import sys, json; print(json.load(sys.stdin)[\"access_token\"])')\ncurl -s -X PATCH http://localhost:8085/api/v2/dags/kyuubi_tests_postgres -H \"Authorization: Bearer $TOKEN\" \\\n     -H 'Content-Type: application/json' -d '{\"is_paused\": false}'\ncurl -s -X POST http://localhost:8085/api/v2/dags/kyuubi_tests_postgres/dagRuns -H \"Authorization: Bearer $TOKEN\" \\\n     -H 'Content-Type: application/json' -d '{\"logical_date\": null, \"conf\": {}}'",
       "python": "kyuubi_lab.airflow_trigger('kyuubi_tests_postgres', conf={}, wait=True)",
       "ui": "http://localhost:8085/dags/kyuubi_tests_postgres"
+    },
+    {
+      "dag_id": "kyuubi_tests_ai",
+      "file": "airflow/dags/kyuubi_test_suites.py",
+      "what": "The `ai` test group only, with the same dependencies as `make test-ai`.",
+      "jobs": [
+        "pgvector-embeddings",
+        "jev-tickets-to-lake"
+      ],
+      "uses": [
+        "kyuubi-rest"
+      ],
+      "conf": null,
+      "make": "make airflow-run DAG=kyuubi_tests_ai",
+      "airflow_cli": "docker compose --profile airflow exec airflow airflow dags trigger kyuubi_tests_ai --conf '{}'",
+      "foreground": "make airflow-test DAG=kyuubi_tests_ai",
+      "rest_body": {
+        "logical_date": null,
+        "conf": {}
+      },
+      "rest_curl": "TOKEN=$(curl -s http://localhost:8085/auth/token | python3 -c 'import sys, json; print(json.load(sys.stdin)[\"access_token\"])')\ncurl -s -X PATCH http://localhost:8085/api/v2/dags/kyuubi_tests_ai -H \"Authorization: Bearer $TOKEN\" \\\n     -H 'Content-Type: application/json' -d '{\"is_paused\": false}'\ncurl -s -X POST http://localhost:8085/api/v2/dags/kyuubi_tests_ai/dagRuns -H \"Authorization: Bearer $TOKEN\" \\\n     -H 'Content-Type: application/json' -d '{\"logical_date\": null, \"conf\": {}}'",
+      "python": "kyuubi_lab.airflow_trigger('kyuubi_tests_ai', conf={}, wait=True)",
+      "ui": "http://localhost:8085/dags/kyuubi_tests_ai"
     },
     {
       "dag_id": "kyuubi_tests_lakehouse",
@@ -1635,6 +1716,35 @@
       "ui": "http://localhost:8085/dags/file_event_pipeline"
     },
     {
+      "dag_id": "postgres_ai_pipeline",
+      "file": "airflow/dags/postgres_ai_pipeline.py",
+      "what": "pgvector + jev: check the extensions, Spark embeds products into pgvector, semantic search in Postgres, one JDBC query routes tickets with jev_choice/jev_prob/jev_score_norm + nearest KB article into Parquet/Hive/Postgres, Kyuubi SQL report, escalation list.",
+      "jobs": [
+        "pgvector-embeddings",
+        "jev-tickets-to-lake"
+      ],
+      "uses": [
+        "postgres",
+        "kyuubi-rest",
+        "kyuubi-jdbc"
+      ],
+      "conf": {
+        "search": "warm clothes for cold winter"
+      },
+      "make": "make airflow-run DAG=postgres_ai_pipeline CONF='{\"search\": \"warm clothes for cold winter\"}'",
+      "airflow_cli": "docker compose --profile airflow exec airflow airflow dags trigger postgres_ai_pipeline --conf '{\"search\": \"warm clothes for cold winter\"}'",
+      "foreground": "make airflow-test DAG=postgres_ai_pipeline CONF='{\"search\": \"warm clothes for cold winter\"}'",
+      "rest_body": {
+        "logical_date": null,
+        "conf": {
+          "search": "warm clothes for cold winter"
+        }
+      },
+      "rest_curl": "TOKEN=$(curl -s http://localhost:8085/auth/token | python3 -c 'import sys, json; print(json.load(sys.stdin)[\"access_token\"])')\ncurl -s -X PATCH http://localhost:8085/api/v2/dags/postgres_ai_pipeline -H \"Authorization: Bearer $TOKEN\" \\\n     -H 'Content-Type: application/json' -d '{\"is_paused\": false}'\ncurl -s -X POST http://localhost:8085/api/v2/dags/postgres_ai_pipeline/dagRuns -H \"Authorization: Bearer $TOKEN\" \\\n     -H 'Content-Type: application/json' -d '{\"logical_date\": null, \"conf\": {\"search\": \"warm clothes for cold winter\"}}'",
+      "python": "kyuubi_lab.airflow_trigger('postgres_ai_pipeline', conf={'search': 'warm clothes for cold winter'}, wait=True)",
+      "ui": "http://localhost:8085/dags/postgres_ai_pipeline"
+    },
+    {
       "dag_id": "order_tracking_project",
       "file": "airflow/dags/order_tracking_project.py",
       "what": "Order tracking project: three waves, each streamed into Iceberg + Delta + Postgres, SLA report, then SQL on the Delta status table and the Iceberg event log.",
@@ -1858,6 +1968,8 @@
         "pg-file-to-pg",
         "pg-pg-to-files",
         "pg-pg-to-pg",
+        "pgvector-embeddings",
+        "jev-tickets-to-lake",
         "iceberg",
         "delta",
         "hudi",
@@ -1883,6 +1995,25 @@
         "kyuubi-rest"
       ],
       "open": "http://localhost:8888/lab/tree/notebooks/12_end_to_end_all.ipynb"
+    },
+    {
+      "file": "13_pgvector_and_jev.ipynb",
+      "what": "jev(), jev_prob(), jev_choice(), jev_score() on people/tickets/products; Spark-written pgvector embeddings and semantic search; jev + pgvector routing landed in the lake",
+      "jobs": [
+        "pgvector-embeddings",
+        "jev-tickets-to-lake"
+      ],
+      "uses": [
+        "postgres",
+        "kyuubi-rest",
+        "kyuubi-jdbc"
+      ],
+      "open": "http://localhost:8888/lab/tree/notebooks/13_pgvector_and_jev.ipynb"
     }
-  ]
+  ],
+  "postgres_ai_sql": {
+    "file": "docker/postgres/examples/ai_examples.sql",
+    "run": "make ai-sql",
+    "sql": "-- pgvector + jev examples for the lab's \"shop\" database.\n--   make ai-sql            runs this whole file\n--   make psql              then paste any block\n-- jev answers come from jev.api_url: the offline jev-local stand-in by default\n-- (word matching, not a model), TypeSafe's Jev if you configured a key.\n\\pset pager off\n\\timing on\n\n\\echo\n\\echo ===== the extensions =====\nSELECT extname, extversion FROM pg_extension WHERE extname IN ('vector', 'jev', 'plpython3u') ORDER BY 1;\nSELECT jev_version() AS jev, current_setting('jev.api_url') AS jev_api_url;\n\n-- ===================================================================== jev\n\\echo\n\\echo ===== 1. jev(): a WHERE clause in plain language =====\nSELECT * FROM people WHERE jev(people, 'the name is European');\n\n\\echo ===== jev() composes with ordinary SQL: cheap predicates run first =====\nSELECT name, country, age FROM people\nWHERE age > 40 AND jev(people, 'works in healthcare')\nORDER BY age DESC;\n\n\\echo ===== 2. jev_prob(): rank by probability =====\nSELECT subject, round(jev_prob(tickets, 'the customer is angry')::numeric, 3) AS p\nFROM tickets ORDER BY p DESC LIMIT 20;\n\n\\echo ===== 3. jev_choice(): route each row to one option =====\nSELECT jev_choice(tickets, 'which team should handle this?',\n                  ARRAY['billing', 'technical', 'security', 'sales']) AS team, count(*)\nFROM tickets GROUP BY 1 ORDER BY 2 DESC;\n\n\\echo ===== 4. jev_score(): position on ordered levels (0 = budget .. 3 = luxury) =====\nSELECT name, price, round(jev_score(products, 'how luxurious is this product?',\n                       ARRAY['budget', 'mid-range', 'premium', 'luxury'])::numeric, 2) AS luxury\nFROM products ORDER BY luxury DESC;\n\n\\echo ===== jev on a view: send only the columns the judgment needs =====\nCREATE OR REPLACE VIEW ticket_text AS SELECT id, subject, body FROM tickets;\nSELECT id, subject,\n       jev_choice(ticket_text, 'which team should handle this?', ARRAY['billing', 'technical', 'security', 'sales']) AS team,\n       round(jev_confidence(ticket_text, 'which team should handle this?', 'choice',\n                            ARRAY['billing', 'technical', 'security', 'sales'])::numeric, 2) AS confidence\nFROM ticket_text ORDER BY id LIMIT 8;\n\n\\echo ===== the raw answer behind one row =====\nSELECT jev_eval(t, 'how urgent is this?', 'score', ARRAY['low', 'medium', 'high', 'urgent'])\nFROM tickets t WHERE id = 20;\n\n\\echo ===== what this session cost (requests, tokens, cache hits) =====\nSELECT jsonb_pretty(jev_stats());\n\n-- ================================================================ pgvector\n\\echo\n\\echo ===== 5. pgvector: nearest help articles for a question (cosine distance <=>) =====\nSELECT id, title, round((embedding <=> lab_embed('refund a double charge on my card'))::numeric, 3) AS distance\nFROM kb_articles ORDER BY embedding <=> lab_embed('refund a double charge on my card') LIMIT 3;\n\n\\echo ===== the same search with the HNSW index forced on (tiny tables use a seq scan otherwise) =====\nSET enable_seqscan = off;\nEXPLAIN (COSTS OFF)\nSELECT id FROM kb_articles ORDER BY embedding <=> (SELECT lab_embed('suspicious login alert')) LIMIT 3;\nRESET enable_seqscan;\n\n\\echo ===== 6. products by meaning: vectors written by Spark (job 18) =====\nSELECT p.name, p.price, round((e.embedding <=> lab_embed('warm clothes for cold winter'))::numeric, 3) AS distance\nFROM product_embeddings e JOIN products p ON p.id = e.product_id\nORDER BY e.embedding <=> lab_embed('warm clothes for cold winter') LIMIT 5;\n\n\\echo ===== other distance operators: <-> L2, <#> negative inner product =====\nSELECT title,\n       round((embedding <->  lab_embed('installer error on windows'))::numeric, 3) AS l2,\n       round((embedding <#>  lab_embed('installer error on windows'))::numeric, 3) AS neg_ip,\n       round((embedding <=>  lab_embed('installer error on windows'))::numeric, 3) AS cosine\nFROM kb_articles ORDER BY embedding <=> lab_embed('installer error on windows') LIMIT 3;\n\n-- ======================================================== both together\n\\echo\n\\echo ===== 7. jev + pgvector: route every ticket AND suggest a help article =====\nSELECT t.id, t.subject,\n       jev_choice(t, 'which team should handle this?', ARRAY['billing', 'technical', 'security', 'sales']) AS team,\n       round(jev_prob(t, 'the customer is angry')::numeric, 2) AS angry,\n       kb.title AS suggested_article\nFROM tickets t\nCROSS JOIN LATERAL (\n  SELECT k.title FROM kb_articles k\n  ORDER BY k.embedding <=> lab_embed(t.subject || ' ' || t.body) LIMIT 1) kb\nORDER BY angry DESC, t.id;\n\n\\echo ===== 8. what Spark wrote back (job 19): ticket_routing =====\nSELECT r.ticket_id, t.subject, r.team, round(r.angry_p::numeric, 2) AS angry_p,\n       round(r.urgency::numeric, 2) AS urgency, k.title AS kb_article, r.routed_at\nFROM ticket_routing r JOIN tickets t ON t.id = r.ticket_id LEFT JOIN kb_articles k ON k.id = r.kb_article\nORDER BY r.angry_p DESC NULLS LAST LIMIT 10;\n"
+  }
 }

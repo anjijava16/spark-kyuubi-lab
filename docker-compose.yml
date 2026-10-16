@@ -90,16 +90,28 @@ services:
   # ------------------------------------------------------------------
   # Catalog: Hive Metastore (thrift 9083) on Postgres
   # ------------------------------------------------------------------
+  # Postgres 16 (Debian) + pgvector + jev. Holds the metastore DB, the "shop"
+  # app DB (with the AI tables) and Airflow's DB. Built locally from
+  # docker/postgres/Dockerfile; the data lives in volume pg16-data.
   postgres:
-    image: postgres:16-alpine
+    image: spark-kyuubi-lab/postgres:local
+    build:
+      context: ./docker/postgres
+      args:
+        PG_MAJOR: "16"
+        JEV_REPO: ${JEV_REPO:-https://github.com/realZachi/pg-jev.git}
+        JEV_REF: ${JEV_REF:-e3450d44f7f6745aa2d728c9289b9ca4a6feda9a}
     environment:
       POSTGRES_DB: ${POSTGRES_DB:-metastore}
       POSTGRES_USER: ${POSTGRES_USER:-hive}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-hivepass}
+      # jev reads the TypeSafe key from the server's environment. Leave empty
+      # to use the offline jev-local service (see JEV_API_URL in .env).
+      TYPESAFE_API_KEY: ${TYPESAFE_API_KEY:-}
     ports:
       - "15432:5432"      # 15432 on the host so it won't clash with a local Postgres
     volumes:
-      - pg-data:/var/lib/postgresql/data
+      - pg16-data:/var/lib/postgresql/data
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-hive} -d ${POSTGRES_DB:-metastore}"]
       interval: 5s
@@ -110,9 +122,16 @@ services:
 
   # One-shot: create the "shop" application database (separate from the
   # metastore DB) and seed the customers table. Idempotent, so it is safe
-  # on an existing pg-data volume. Re-run: docker compose run --rm pg-init
+  # on an existing pg16-data volume. Also installs pgvector + jev and the AI
+  # tables (people, tickets, products, kb_articles). Re-run: make pg-init
   pg-init:
-    image: postgres:16-alpine
+    image: spark-kyuubi-lab/postgres:local
+    build:
+      context: ./docker/postgres
+      args:
+        PG_MAJOR: "16"
+        JEV_REPO: ${JEV_REPO:-https://github.com/realZachi/pg-jev.git}
+        JEV_REF: ${JEV_REF:-e3450d44f7f6745aa2d728c9289b9ca4a6feda9a}
     depends_on:
       postgres:
         condition: service_healthy
@@ -121,10 +140,29 @@ services:
       PGUSER: ${POSTGRES_USER:-hive}
       PGPASSWORD: ${POSTGRES_PASSWORD:-hivepass}
       PGDATABASE: ${POSTGRES_DB:-metastore}
+      # where jev() sends its questions (set per database by ai-extensions.sql)
+      JEV_API_URL: ${JEV_API_URL:-http://jev-local:8787/v1/systemone}
     volumes:
       - ./docker/postgres:/sql:ro
     entrypoint: ["sh", "/sql/init-shop.sh"]
     restart: "no"
+    networks: [lab]
+
+  # Offline stand-in for the Jev API that the jev extension calls. Word
+  # matching + a small lexicon, not a model: lets jev() run with no key and
+  # no data leaving your laptop. For real answers set JEV_API_URL and
+  # TYPESAFE_API_KEY in .env, then `make pg-init`.
+  jev-local:
+    image: python:3.12-slim
+    command: ["python", "/app/jev_local.py", "8787"]
+    volumes:
+      - ./docker/jev-local:/app:ro
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8787/')"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
     networks: [lab]
 
   # One-shot: download Delta Lake, Iceberg and Hudi jars that match this
@@ -470,7 +508,7 @@ services:
 volumes:
   rustfs-data:
   rustfs-logs:
-  pg-data:
+  pg16-data:      # Postgres 16 Debian (pgvector + jev). The old alpine volume was pg-data: make pg-migrate
   m2-cache:
   lakehouse-jars:
   airflow-logs:

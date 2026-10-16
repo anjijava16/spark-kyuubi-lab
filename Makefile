@@ -1,9 +1,9 @@
 .PHONY: up jars upload lakehouse pg-init test test-core test-formats test-hive test-postgres \
-        test-lake test-orders test-streaming sql sql-lake psql ps logs down clean all payloads \
+        test-ai test-lake test-orders test-streaming sql sql-lake psql ps logs down clean all payloads \
         kafka-install kafka-uninstall kafka-status kafka-reset kafka-topics \
         produce produce-files tail stream-start stream-list stream-stop \
         airflow airflow-stop airflow-dags airflow-run airflow-test airflow-logs \
-        jupyter jupyter-stop jupyter-logs
+        jupyter jupyter-stop jupyter-logs ai-sql ai-reset-jev pg-migrate
 
 # client container (Python + requests + kafka-python + boto3), on the lab network
 CLIENT_RUN = docker compose --profile tools run --rm kyuubi-client
@@ -107,6 +107,10 @@ test-hive:
 	$(CLIENT) --group hive $(ARGS)
 test-postgres:
 	$(CLIENT) --group postgres $(ARGS)
+## pgvector + jev jobs (Spark -> Postgres vectors, jev routing -> lake)
+test-ai:
+	$(CLIENT) --group ai $(ARGS)
+
 test-lake:
 	$(CLIENT) --group lakehouse $(ARGS)
 test-orders:
@@ -129,6 +133,23 @@ sql-lake:
 ## psql into the shop database
 psql:
 	docker compose exec postgres psql -U app -d shop
+
+# ---------------------------------------------------------------------------
+# pgvector + jev (Postgres "shop" database)
+# ---------------------------------------------------------------------------
+
+## run every pgvector + jev example (docker/postgres/examples/ai_examples.sql)
+ai-sql:
+	docker compose exec -T postgres psql -U app -d shop -v ON_ERROR_STOP=1 < docker/postgres/examples/ai_examples.sql
+
+## after changing JEV_API_URL / TYPESAFE_API_KEY in .env: recreate Postgres with the new key, re-point jev
+ai-reset-jev:
+	docker compose up -d postgres
+	docker compose run --rm pg-init
+
+## copy all databases from the old alpine Postgres volume (pg-data) into the new pgvector + jev one
+pg-migrate:
+	sh docker/postgres/migrate-from-alpine.sh
 
 # ---------------------------------------------------------------------------
 # Airflow (optional): DAGs in airflow/dags -> Kyuubi -> Spark

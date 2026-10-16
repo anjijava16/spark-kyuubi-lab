@@ -287,6 +287,9 @@ def main():
 
     for c in ("status", "log", "kill"):
         p = sub.add_parser(c)
+        if c == "log":
+            p.add_argument("--errors", action="store_true",
+                           help="only the lines that explain a failure")
         p.add_argument("batch_id")
     sub.add_parser("list")
 
@@ -323,7 +326,17 @@ def main():
     if a.cmd == "status":
         print(json.dumps(k.get(a.batch_id), indent=2))
     elif a.cmd == "log":
-        for line in k.log(a.batch_id).get("logRowSet", []):
+        lines, start = [], 0
+        while True:                      # the whole log, page by page
+            rows = k.log(a.batch_id, start=start, size=2000).get("logRowSet", [])
+            if not rows:
+                break
+            lines += rows
+            start += len(rows)
+        if getattr(a, "errors", False):
+            from lab_runner import error_excerpt
+            lines = error_excerpt(lines, max_lines=80) or ["(no error lines found)"]
+        for line in lines:
             print(line)
     elif a.cmd == "kill":
         print(json.dumps(k.kill(a.batch_id), indent=2))

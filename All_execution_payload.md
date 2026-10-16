@@ -43,11 +43,13 @@ States go `PENDING -> RUNNING -> FINISHED | ERROR | CANCELED`.
 - [File formats: CSV, Parquet, ORC, JSON, Avro](#formats) (1)
 - [Hive ELT: TEXTFILE, ORC, Parquet, RCFile tables](#hive) (1)
 - [Postgres: file to table, table to file, table to table](#postgres) (3)
+- [AI in Postgres: pgvector embeddings and jev plain-language SQL, driven by Spark](#ai) (2)
 - [Lakehouse: Iceberg, Delta Lake, Hudi](#lakehouse) (3)
 - [Project: order tracking (file stream into Iceberg, Delta, Postgres)](#orders) (7)
 - [Streaming: Kafka producer/consumer and file events](#streaming) (13)
-- [Airflow DAGs](#airflow-dags) (15)
-- [Jupyter notebooks](#jupyter-notebooks) (13)
+- [Airflow DAGs](#airflow-dags) (17)
+- [Jupyter notebooks](#jupyter-notebooks) (14)
+- [Postgres AI SQL: pgvector + jev](#postgres-ai-sql-pgvector--jev)
 
 <a id="core"></a>
 ## Core: Python, Java and Scala jobs, uploads, Hive tables
@@ -1028,10 +1030,138 @@ options:
 </details>
 
 
+<a id="ai"></a>
+## AI in Postgres: pgvector embeddings and jev plain-language SQL, driven by Spark
+
+### 16. `pgvector-embeddings`
+
+Spark embeds products -> pgvector (HNSW) in Postgres, checks Spark == lab_embed(), semantic search
+
+- group `ai`; Kyuubi batch; prints `PGVECTOR EMBEDDINGS OK` on success
+
+**CLI**
+
+```bash
+python client/kyuubi_submit.py --url http://localhost:10099 submit s3a://jobs/python/18_pgvector_embeddings.py --remote --name pgvector-embeddings
+```
+
+**REST** `POST /api/v1/batches` (application/json)
+
+```json
+{
+  "batchType": "SPARK",
+  "name": "pgvector-embeddings",
+  "className": "org.apache.spark.deploy.PythonRunner",
+  "resource": "s3a://jobs/python/18_pgvector_embeddings.py",
+  "conf": {},
+  "args": []
+}
+```
+
+**curl**
+
+```bash
+curl -s -X POST http://localhost:10099/api/v1/batches \
+  -u anji: -H 'Content-Type: application/json' \
+  -d @- <<'JSON'
+{
+  "batchType": "SPARK",
+  "name": "pgvector-embeddings",
+  "className": "org.apache.spark.deploy.PythonRunner",
+  "resource": "s3a://jobs/python/18_pgvector_embeddings.py",
+  "conf": {},
+  "args": []
+}
+JSON
+```
+
+<details><summary>kyuubi-ctl YAML</summary>
+
+```yaml
+apiVersion: v1
+username: anji
+request:
+  batchType: SPARK
+  name: pgvector-embeddings
+  resource: s3a://jobs/python/18_pgvector_embeddings.py
+  className: org.apache.spark.deploy.PythonRunner
+  args:
+    []
+  configs:
+    {}
+options:
+  verbose: true
+```
+
+</details>
+
+### 17. `jev-tickets-to-lake`
+
+one JDBC query: jev_choice/jev_prob/jev_score_norm + nearest KB article -> Parquet, Hive, Postgres
+
+- group `ai`; Kyuubi batch; run after `pgvector-embeddings`; prints `JEV TICKETS TO LAKE OK` on success
+
+**CLI**
+
+```bash
+python client/kyuubi_submit.py --url http://localhost:10099 submit s3a://jobs/python/19_jev_tickets_to_lake.py --remote --name jev-tickets-to-lake
+```
+
+**REST** `POST /api/v1/batches` (application/json)
+
+```json
+{
+  "batchType": "SPARK",
+  "name": "jev-tickets-to-lake",
+  "className": "org.apache.spark.deploy.PythonRunner",
+  "resource": "s3a://jobs/python/19_jev_tickets_to_lake.py",
+  "conf": {},
+  "args": []
+}
+```
+
+**curl**
+
+```bash
+curl -s -X POST http://localhost:10099/api/v1/batches \
+  -u anji: -H 'Content-Type: application/json' \
+  -d @- <<'JSON'
+{
+  "batchType": "SPARK",
+  "name": "jev-tickets-to-lake",
+  "className": "org.apache.spark.deploy.PythonRunner",
+  "resource": "s3a://jobs/python/19_jev_tickets_to_lake.py",
+  "conf": {},
+  "args": []
+}
+JSON
+```
+
+<details><summary>kyuubi-ctl YAML</summary>
+
+```yaml
+apiVersion: v1
+username: anji
+request:
+  batchType: SPARK
+  name: jev-tickets-to-lake
+  resource: s3a://jobs/python/19_jev_tickets_to_lake.py
+  className: org.apache.spark.deploy.PythonRunner
+  args:
+    []
+  configs:
+    {}
+options:
+  verbose: true
+```
+
+</details>
+
+
 <a id="lakehouse"></a>
 ## Lakehouse: Iceberg, Delta Lake, Hudi
 
-### 16. `iceberg`
+### 18. `iceberg`
 
 Iceberg in Hive Metastore: MERGE, DELETE, schema+partition evolution, time travel
 
@@ -1115,7 +1245,7 @@ options:
 
 </details>
 
-### 17. `delta`
+### 19. `delta`
 
 Delta: MERGE, DML, mergeSchema, time travel, change data feed, OPTIMIZE
 
@@ -1190,7 +1320,7 @@ options:
 
 </details>
 
-### 18. `hudi`
+### 20. `hudi`
 
 Hudi COW: insert, upsert, delete, incremental query, time travel
 
@@ -1275,7 +1405,7 @@ options:
 <a id="orders"></a>
 ## Project: order tracking (file stream into Iceberg, Delta, Postgres)
 
-### 19. `orders-wave1`
+### 21. `orders-wave1`
 
 generate wave 1 of order events (resets earlier runs)
 
@@ -1347,7 +1477,7 @@ options:
 
 </details>
 
-### 20. `orders-stream1`
+### 22. `orders-stream1`
 
 stream wave 1 -> Iceberg log, Delta status, Postgres (fresh start)
 
@@ -1438,7 +1568,7 @@ options:
 
 </details>
 
-### 21. `orders-wave2`
+### 23. `orders-wave2`
 
 generate wave 2
 
@@ -1507,7 +1637,7 @@ options:
 
 </details>
 
-### 22. `orders-stream2`
+### 24. `orders-stream2`
 
 stream again: only wave 2 files are new (checkpoint)
 
@@ -1594,7 +1724,7 @@ options:
 
 </details>
 
-### 23. `orders-wave3`
+### 25. `orders-wave3`
 
 generate wave 3 (with a duplicate and a late event)
 
@@ -1663,7 +1793,7 @@ options:
 
 </details>
 
-### 24. `orders-stream3`
+### 26. `orders-stream3`
 
 stream wave 3
 
@@ -1750,7 +1880,7 @@ options:
 
 </details>
 
-### 25. `orders-report`
+### 27. `orders-report`
 
 SLA report + check Iceberg, Delta and Postgres all agree
 
@@ -1841,7 +1971,7 @@ options:
 <a id="streaming"></a>
 ## Streaming: Kafka producer/consumer and file events
 
-### 26. `kafka-produce`
+### 28. `kafka-produce`
 
 Python producer app sends 40 order lifecycles to Kafka orders.events
 
@@ -1859,7 +1989,7 @@ From your Mac (`pip install kafka-python boto3` first):
 python client/producers/order_producer.py --orders 40 --run-id demo1 --bootstrap localhost:9094
 ```
 
-### 27. `kafka-consumer-basic`
+### 29. `kafka-consumer-basic`
 
 Kafka -> Spark consumer -> Parquet bronze (offsets + per-batch summary)
 
@@ -1958,7 +2088,7 @@ python client/kyuubi_submit.py --url http://localhost:10099 submit s3a://jobs/py
 
 Stop it: `python client/kyuubi_submit.py kill <batch-id>   (or: curl -X DELETE http://localhost:10099/api/v1/batches/<batch-id>)`
 
-### 28. `kafka-to-delta-pg`
+### 30. `kafka-to-delta-pg`
 
 Kafka -> Delta event table (exactly once) + Postgres order status (upsert)
 
@@ -2065,7 +2195,7 @@ python client/kyuubi_submit.py --url http://localhost:10099 submit s3a://jobs/py
 
 Stop it: `python client/kyuubi_submit.py kill <batch-id>   (or: curl -X DELETE http://localhost:10099/api/v1/batches/<batch-id>)`
 
-### 29. `kafka-enrich-publish`
+### 31. `kafka-enrich-publish`
 
 Kafka -> join customers (Postgres) -> Spark publishes orders.enriched + orders.alerts
 
@@ -2164,7 +2294,7 @@ python client/kyuubi_submit.py --url http://localhost:10099 submit s3a://jobs/py
 
 Stop it: `python client/kyuubi_submit.py kill <batch-id>   (or: curl -X DELETE http://localhost:10099/api/v1/batches/<batch-id>)`
 
-### 30. `kafka-windowed-metrics`
+### 32. `kafka-windowed-metrics`
 
 event-time windows + watermark -> Spark publishes orders.metrics + Postgres upsert
 
@@ -2263,7 +2393,7 @@ python client/kyuubi_submit.py --url http://localhost:10099 submit s3a://jobs/py
 
 Stop it: `python client/kyuubi_submit.py kill <batch-id>   (or: curl -X DELETE http://localhost:10099/api/v1/batches/<batch-id>)`
 
-### 31. `kafka-batch-publish`
+### 33. `kafka-batch-publish`
 
 Spark BATCH producer: Hive demo.orders -> orders.backfill, then batch read-back
 
@@ -2339,7 +2469,7 @@ options:
 
 </details>
 
-### 32. `file-drop-produce`
+### 34. `file-drop-produce`
 
 producer drops 3 JSON files of order events into s3a://data/stream/landing/
 
@@ -2357,7 +2487,7 @@ From your Mac (`pip install kafka-python boto3` first):
 S3_ENDPOINT=http://localhost:9100 python client/producers/order_producer.py --sink s3 --orders 20 --files 3 --run-id demo1f
 ```
 
-### 33. `file-drop-stream`
+### 35. `file-drop-stream`
 
 file-event stream: new files in landing/ -> Parquet silver, processed files archived
 
@@ -2448,7 +2578,7 @@ python client/kyuubi_submit.py --url http://localhost:10099 submit s3a://jobs/py
 
 Stop it: `python client/kyuubi_submit.py kill <batch-id>   (or: curl -X DELETE http://localhost:10099/api/v1/batches/<batch-id>)`
 
-### 34. `verify-streaming`
+### 36. `verify-streaming`
 
 batch check: every output of jobs 30-35 holds exactly this run's events
 
@@ -2539,7 +2669,7 @@ options:
 
 </details>
 
-### 35. `live-producer`
+### 37. `live-producer`
 
 always-on producer: ~5 events/s into orders.events until Ctrl-C
 
@@ -2557,7 +2687,7 @@ From your Mac (`pip install kafka-python boto3` first):
 python client/producers/order_producer.py --forever --rate 5 --bootstrap localhost:9094
 ```
 
-### 36. `live-file-dropper`
+### 38. `live-file-dropper`
 
 always-on producer: a JSON file into data/stream/landing/ every ~5 s
 
@@ -2575,7 +2705,7 @@ From your Mac (`pip install kafka-python boto3` first):
 S3_ENDPOINT=http://localhost:9100 python client/producers/order_producer.py --sink s3 --forever --rate 5
 ```
 
-### 37. `tail-enriched`
+### 39. `tail-enriched`
 
 Python consumer: print the newest messages Spark published to orders.enriched
 
@@ -2593,7 +2723,7 @@ From your Mac (`pip install kafka-python boto3` first):
 python client/producers/topic_tail.py orders.enriched --last 5 --bootstrap localhost:9094
 ```
 
-### 38. `tail-metrics-follow`
+### 40. `tail-metrics-follow`
 
 Python consumer: follow orders.metrics live while job 33 runs always-on
 
@@ -2626,7 +2756,7 @@ spark-submit -> Spark.
 Every catalog job, group by group (core, formats, hive, postgres, lakehouse, orders, streaming), then a pass/fail report. The Airflow version of `make test`.
 
 * file: `airflow/dags/kyuubi_test_suites.py`, UI: http://localhost:8085/dags/kyuubi_tests_all
-* Kyuubi jobs: `jar-sparkpi`, `py-smoke`, `py-upload`, `py-wordcount`, `py-hive-etl`, `py-pyfiles`, `py-conf-args`, `java-wordcount`, `scala-sales-report`, `py-expected-failure`, `formats`, `hive-elt`, `pg-file-to-pg`, `pg-pg-to-files`, `pg-pg-to-pg`, `iceberg`, `delta`, `hudi`, `orders-wave1`, `orders-stream1`, `orders-wave2`, `orders-stream2`, `orders-wave3`, `orders-stream3`, `orders-report`, `kafka-produce`, `kafka-consumer-basic`, `kafka-to-delta-pg`, `kafka-enrich-publish`, `kafka-windowed-metrics`, `kafka-batch-publish`, `file-drop-produce`, `file-drop-stream`, `verify-streaming`
+* Kyuubi jobs: `jar-sparkpi`, `py-smoke`, `py-upload`, `py-wordcount`, `py-hive-etl`, `py-pyfiles`, `py-conf-args`, `java-wordcount`, `scala-sales-report`, `py-expected-failure`, `formats`, `hive-elt`, `pg-file-to-pg`, `pg-pg-to-files`, `pg-pg-to-pg`, `pgvector-embeddings`, `jev-tickets-to-lake`, `iceberg`, `delta`, `hudi`, `orders-wave1`, `orders-stream1`, `orders-wave2`, `orders-stream2`, `orders-wave3`, `orders-stream3`, `orders-report`, `kafka-produce`, `kafka-consumer-basic`, `kafka-to-delta-pg`, `kafka-enrich-publish`, `kafka-windowed-metrics`, `kafka-batch-publish`, `file-drop-produce`, `file-drop-stream`, `verify-streaming`
 * talks to: kyuubi-rest
 
 ```bash
@@ -2771,7 +2901,37 @@ From a notebook:
 kyuubi_lab.airflow_trigger('kyuubi_tests_postgres', conf={}, wait=True)
 ```
 
-### D6. `kyuubi_tests_lakehouse`
+### D6. `kyuubi_tests_ai`
+
+The `ai` test group only, with the same dependencies as `make test-ai`.
+
+* file: `airflow/dags/kyuubi_test_suites.py`, UI: http://localhost:8085/dags/kyuubi_tests_ai
+* Kyuubi jobs: `pgvector-embeddings`, `jev-tickets-to-lake`
+* talks to: kyuubi-rest
+
+```bash
+make airflow-run DAG=kyuubi_tests_ai
+docker compose --profile airflow exec airflow airflow dags trigger kyuubi_tests_ai --conf '{}'
+make airflow-test DAG=kyuubi_tests_ai    # foreground, logs in your terminal
+```
+
+Airflow REST (lab runs with no login; GET /auth/token hands out a token):
+
+```bash
+TOKEN=$(curl -s http://localhost:8085/auth/token | python3 -c 'import sys, json; print(json.load(sys.stdin)["access_token"])')
+curl -s -X PATCH http://localhost:8085/api/v2/dags/kyuubi_tests_ai -H "Authorization: Bearer $TOKEN" \
+     -H 'Content-Type: application/json' -d '{"is_paused": false}'
+curl -s -X POST http://localhost:8085/api/v2/dags/kyuubi_tests_ai/dagRuns -H "Authorization: Bearer $TOKEN" \
+     -H 'Content-Type: application/json' -d '{"logical_date": null, "conf": {}}'
+```
+
+From a notebook:
+
+```python
+kyuubi_lab.airflow_trigger('kyuubi_tests_ai', conf={}, wait=True)
+```
+
+### D7. `kyuubi_tests_lakehouse`
 
 The `lakehouse` test group only, with the same dependencies as `make test-lakehouse`.
 
@@ -2801,7 +2961,7 @@ From a notebook:
 kyuubi_lab.airflow_trigger('kyuubi_tests_lakehouse', conf={}, wait=True)
 ```
 
-### D7. `kyuubi_tests_orders`
+### D8. `kyuubi_tests_orders`
 
 The `orders` test group only, with the same dependencies as `make test-orders`.
 
@@ -2831,7 +2991,7 @@ From a notebook:
 kyuubi_lab.airflow_trigger('kyuubi_tests_orders', conf={}, wait=True)
 ```
 
-### D8. `kyuubi_tests_streaming`
+### D9. `kyuubi_tests_streaming`
 
 The `streaming` test group only, with the same dependencies as `make test-streaming`.
 
@@ -2861,7 +3021,7 @@ From a notebook:
 kyuubi_lab.airflow_trigger('kyuubi_tests_streaming', conf={}, wait=True)
 ```
 
-### D9. `kyuubi_run_any_job`
+### D10. `kyuubi_run_any_job`
 
 Pick any catalog job in the trigger form; optional args (replace), extra_args (append) and Spark conf.
 
@@ -2891,7 +3051,7 @@ From a notebook:
 kyuubi_lab.airflow_trigger('kyuubi_run_any_job', conf={'job': 'iceberg', 'args': None, 'extra_args': [], 'conf': {'spark.executor.memory': '1g'}}, wait=True)
 ```
 
-### D10. `lakehouse_daily_elt`
+### D11. `lakehouse_daily_elt`
 
 Daily pipeline (02:00, created paused): S3 sensor -> Hive ELT (TEXTFILE/ORC/Parquet/RCFILE) -> formats -> Postgres file/table jobs -> Iceberg, Delta, Hudi -> SQL quality checks over Kyuubi JDBC -> top region per month.
 
@@ -2921,7 +3081,7 @@ From a notebook:
 kyuubi_lab.airflow_trigger('lakehouse_daily_elt', conf={}, wait=True)
 ```
 
-### D11. `kafka_streaming_pipeline`
+### D12. `kafka_streaming_pipeline`
 
 Producer -> Kafka -> four Structured Streaming jobs (--available-now) -> Kafka/Delta/Postgres, Spark batch backfill to Kafka, file-event stream, verify job, then Python checks of the topics and Postgres. Skips itself when Kafka isn't installed.
 
@@ -2951,7 +3111,7 @@ From a notebook:
 kyuubi_lab.airflow_trigger('kafka_streaming_pipeline', conf={'orders': 40}, wait=True)
 ```
 
-### D12. `kafka_live_streams`
+### D13. `kafka_live_streams`
 
 Always-on streams: starts jobs 31/32/33 without --available-now (1 core each), waits until RUNNING, feeds them with the producer for N minutes, checks Postgres and Kafka, then kills the three batches (always, even after a failure).
 
@@ -2981,7 +3141,7 @@ From a notebook:
 kyuubi_lab.airflow_trigger('kafka_live_streams', conf={'minutes': 2, 'rate': 5}, wait=True)
 ```
 
-### D13. `kyuubi_sql_reporting`
+### D14. `kyuubi_sql_reporting`
 
 SQL only, over Kyuubi JDBC: branch on whether demo.orders exists (build it with a batch if not), CTAS into Parquet/ORC + a view, quality checks, copy into Iceberg and Delta, upsert the report into Postgres shop.report_region_month.
 
@@ -3011,7 +3171,7 @@ From a notebook:
 kyuubi_lab.airflow_trigger('kyuubi_sql_reporting', conf={}, wait=True)
 ```
 
-### D14. `file_event_pipeline`
+### D15. `file_event_pipeline`
 
 JSON files dropped into s3a://data/stream/landing -> sensor -> file-source stream -> Parquet silver -> SQL on the folder -> second run processes nothing (checkpoint).
 
@@ -3041,7 +3201,37 @@ From a notebook:
 kyuubi_lab.airflow_trigger('file_event_pipeline', conf={'orders': 20, 'files': 3}, wait=True)
 ```
 
-### D15. `order_tracking_project`
+### D16. `postgres_ai_pipeline`
+
+pgvector + jev: check the extensions, Spark embeds products into pgvector, semantic search in Postgres, one JDBC query routes tickets with jev_choice/jev_prob/jev_score_norm + nearest KB article into Parquet/Hive/Postgres, Kyuubi SQL report, escalation list.
+
+* file: `airflow/dags/postgres_ai_pipeline.py`, UI: http://localhost:8085/dags/postgres_ai_pipeline
+* Kyuubi jobs: `pgvector-embeddings`, `jev-tickets-to-lake`
+* talks to: postgres, kyuubi-rest, kyuubi-jdbc
+
+```bash
+make airflow-run DAG=postgres_ai_pipeline CONF='{"search": "warm clothes for cold winter"}'
+docker compose --profile airflow exec airflow airflow dags trigger postgres_ai_pipeline --conf '{"search": "warm clothes for cold winter"}'
+make airflow-test DAG=postgres_ai_pipeline CONF='{"search": "warm clothes for cold winter"}'    # foreground, logs in your terminal
+```
+
+Airflow REST (lab runs with no login; GET /auth/token hands out a token):
+
+```bash
+TOKEN=$(curl -s http://localhost:8085/auth/token | python3 -c 'import sys, json; print(json.load(sys.stdin)["access_token"])')
+curl -s -X PATCH http://localhost:8085/api/v2/dags/postgres_ai_pipeline -H "Authorization: Bearer $TOKEN" \
+     -H 'Content-Type: application/json' -d '{"is_paused": false}'
+curl -s -X POST http://localhost:8085/api/v2/dags/postgres_ai_pipeline/dagRuns -H "Authorization: Bearer $TOKEN" \
+     -H 'Content-Type: application/json' -d '{"logical_date": null, "conf": {"search": "warm clothes for cold winter"}}'
+```
+
+From a notebook:
+
+```python
+kyuubi_lab.airflow_trigger('postgres_ai_pipeline', conf={'search': 'warm clothes for cold winter'}, wait=True)
+```
+
+### D17. `order_tracking_project`
 
 Order tracking project: three waves, each streamed into Iceberg + Delta + Postgres, SLA report, then SQL on the Delta status table and the Iceberg event log.
 
@@ -3179,5 +3369,126 @@ list DAGs, trigger kyuubi_run_any_job / kyuubi_sql_reporting / kafka_streaming_p
 every catalog job, group by group, with a pass/fail table and chart
 
 * open: http://localhost:8888/lab/tree/notebooks/12_end_to_end_all.ipynb
-* Kyuubi jobs: all 34 catalog jobs
+* Kyuubi jobs: all 36 catalog jobs
 * talks to: kyuubi-rest
+
+### N14. `13_pgvector_and_jev.ipynb`
+
+jev(), jev_prob(), jev_choice(), jev_score() on people/tickets/products; Spark-written pgvector embeddings and semantic search; jev + pgvector routing landed in the lake
+
+* open: http://localhost:8888/lab/tree/notebooks/13_pgvector_and_jev.ipynb
+* Kyuubi jobs: `pgvector-embeddings`, `jev-tickets-to-lake`
+* talks to: postgres, kyuubi-rest, kyuubi-jdbc
+
+## Postgres AI SQL: pgvector + jev
+
+The `shop` database has two extensions: **pgvector** (vector column, `<=>` cosine,
+`<->` L2, `<#>` inner product, HNSW index) and **jev** (github.com/realZachi/pg-jev:
+plain-language `jev()`, `jev_prob()`, `jev_choice()`, `jev_score()`). These run in
+Postgres itself, not through Kyuubi; the Spark side is the `ai` jobs above.
+jev's endpoint is `jev.api_url` (offline `jev-local` by default, TypeSafe with a key).
+
+```bash
+make ai-sql                                     # run all of it
+make psql                                       # or paste a block
+psql postgres://app:apppass@localhost:15432/shop   # from your Mac
+```
+
+Every statement in `docker/postgres/examples/ai_examples.sql`:
+
+```sql
+-- pgvector + jev examples for the lab's "shop" database.
+--   make ai-sql            runs this whole file
+--   make psql              then paste any block
+-- jev answers come from jev.api_url: the offline jev-local stand-in by default
+-- (word matching, not a model), TypeSafe's Jev if you configured a key.
+\pset pager off
+\timing on
+
+\echo
+\echo ===== the extensions =====
+SELECT extname, extversion FROM pg_extension WHERE extname IN ('vector', 'jev', 'plpython3u') ORDER BY 1;
+SELECT jev_version() AS jev, current_setting('jev.api_url') AS jev_api_url;
+
+-- ===================================================================== jev
+\echo
+\echo ===== 1. jev(): a WHERE clause in plain language =====
+SELECT * FROM people WHERE jev(people, 'the name is European');
+
+\echo ===== jev() composes with ordinary SQL: cheap predicates run first =====
+SELECT name, country, age FROM people
+WHERE age > 40 AND jev(people, 'works in healthcare')
+ORDER BY age DESC;
+
+\echo ===== 2. jev_prob(): rank by probability =====
+SELECT subject, round(jev_prob(tickets, 'the customer is angry')::numeric, 3) AS p
+FROM tickets ORDER BY p DESC LIMIT 20;
+
+\echo ===== 3. jev_choice(): route each row to one option =====
+SELECT jev_choice(tickets, 'which team should handle this?',
+                  ARRAY['billing', 'technical', 'security', 'sales']) AS team, count(*)
+FROM tickets GROUP BY 1 ORDER BY 2 DESC;
+
+\echo ===== 4. jev_score(): position on ordered levels (0 = budget .. 3 = luxury) =====
+SELECT name, price, round(jev_score(products, 'how luxurious is this product?',
+                       ARRAY['budget', 'mid-range', 'premium', 'luxury'])::numeric, 2) AS luxury
+FROM products ORDER BY luxury DESC;
+
+\echo ===== jev on a view: send only the columns the judgment needs =====
+CREATE OR REPLACE VIEW ticket_text AS SELECT id, subject, body FROM tickets;
+SELECT id, subject,
+       jev_choice(ticket_text, 'which team should handle this?', ARRAY['billing', 'technical', 'security', 'sales']) AS team,
+       round(jev_confidence(ticket_text, 'which team should handle this?', 'choice',
+                            ARRAY['billing', 'technical', 'security', 'sales'])::numeric, 2) AS confidence
+FROM ticket_text ORDER BY id LIMIT 8;
+
+\echo ===== the raw answer behind one row =====
+SELECT jev_eval(t, 'how urgent is this?', 'score', ARRAY['low', 'medium', 'high', 'urgent'])
+FROM tickets t WHERE id = 20;
+
+\echo ===== what this session cost (requests, tokens, cache hits) =====
+SELECT jsonb_pretty(jev_stats());
+
+-- ================================================================ pgvector
+\echo
+\echo ===== 5. pgvector: nearest help articles for a question (cosine distance <=>) =====
+SELECT id, title, round((embedding <=> lab_embed('refund a double charge on my card'))::numeric, 3) AS distance
+FROM kb_articles ORDER BY embedding <=> lab_embed('refund a double charge on my card') LIMIT 3;
+
+\echo ===== the same search with the HNSW index forced on (tiny tables use a seq scan otherwise) =====
+SET enable_seqscan = off;
+EXPLAIN (COSTS OFF)
+SELECT id FROM kb_articles ORDER BY embedding <=> (SELECT lab_embed('suspicious login alert')) LIMIT 3;
+RESET enable_seqscan;
+
+\echo ===== 6. products by meaning: vectors written by Spark (job 18) =====
+SELECT p.name, p.price, round((e.embedding <=> lab_embed('warm clothes for cold winter'))::numeric, 3) AS distance
+FROM product_embeddings e JOIN products p ON p.id = e.product_id
+ORDER BY e.embedding <=> lab_embed('warm clothes for cold winter') LIMIT 5;
+
+\echo ===== other distance operators: <-> L2, <#> negative inner product =====
+SELECT title,
+       round((embedding <->  lab_embed('installer error on windows'))::numeric, 3) AS l2,
+       round((embedding <#>  lab_embed('installer error on windows'))::numeric, 3) AS neg_ip,
+       round((embedding <=>  lab_embed('installer error on windows'))::numeric, 3) AS cosine
+FROM kb_articles ORDER BY embedding <=> lab_embed('installer error on windows') LIMIT 3;
+
+-- ======================================================== both together
+\echo
+\echo ===== 7. jev + pgvector: route every ticket AND suggest a help article =====
+SELECT t.id, t.subject,
+       jev_choice(t, 'which team should handle this?', ARRAY['billing', 'technical', 'security', 'sales']) AS team,
+       round(jev_prob(t, 'the customer is angry')::numeric, 2) AS angry,
+       kb.title AS suggested_article
+FROM tickets t
+CROSS JOIN LATERAL (
+  SELECT k.title FROM kb_articles k
+  ORDER BY k.embedding <=> lab_embed(t.subject || ' ' || t.body) LIMIT 1) kb
+ORDER BY angry DESC, t.id;
+
+\echo ===== 8. what Spark wrote back (job 19): ticket_routing =====
+SELECT r.ticket_id, t.subject, r.team, round(r.angry_p::numeric, 2) AS angry_p,
+       round(r.urgency::numeric, 2) AS urgency, k.title AS kb_article, r.routed_at
+FROM ticket_routing r JOIN tickets t ON t.id = r.ticket_id LEFT JOIN kb_articles k ON k.id = r.kb_article
+ORDER BY r.angry_p DESC NULLS LAST LIMIT 10;
+```
