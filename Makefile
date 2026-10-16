@@ -1,7 +1,9 @@
 .PHONY: up jars upload lakehouse pg-init test test-core test-formats test-hive test-postgres \
         test-lake test-orders test-streaming sql sql-lake psql ps logs down clean all payloads \
         kafka-install kafka-uninstall kafka-status kafka-reset kafka-topics \
-        produce produce-files tail stream-start stream-list stream-stop
+        produce produce-files tail stream-start stream-list stream-stop \
+        airflow airflow-stop airflow-dags airflow-run airflow-test airflow-logs \
+        jupyter jupyter-stop jupyter-logs
 
 # client container (Python + requests + kafka-python + boto3), on the lab network
 CLIENT_RUN = docker compose --profile tools run --rm kyuubi-client
@@ -128,8 +130,57 @@ sql-lake:
 psql:
 	docker compose exec postgres psql -U app -d shop
 
+# ---------------------------------------------------------------------------
+# Airflow (optional): DAGs in airflow/dags -> Kyuubi -> Spark
+# ---------------------------------------------------------------------------
+AF = docker compose --profile airflow exec airflow airflow
+DAG ?= kyuubi_tests_core
+CONF ?= {}
+
+## start Airflow 3 (UI http://localhost:8085, no login). First start builds the image (~3 min)
+airflow:
+	docker compose --profile airflow up -d --build airflow
+	@echo "waiting for Airflow to answer on :8085 ..."
+	@for i in $$(seq 1 60); do curl -fs http://localhost:8085/api/v2/monitor/health >/dev/null 2>&1 && break; sleep 5; done
+	@echo "Airflow: http://localhost:8085   DAGs: make airflow-dags   run one: make airflow-run DAG=kyuubi_tests_core"
+
+airflow-stop:
+	docker compose --profile airflow rm -sf airflow
+
+## list the lab DAGs and any import errors
+airflow-dags:
+	$(AF) dags list -o table
+	$(AF) dags list-import-errors
+
+## trigger a DAG run:  make airflow-run DAG=kyuubi_run_any_job CONF='{"job":"iceberg"}'
+airflow-run:
+	$(AF) dags unpause $(DAG)
+	$(AF) dags trigger $(DAG) --conf '$(CONF)'
+
+## run a DAG in the foreground, task logs in your terminal:  make airflow-test DAG=kyuubi_tests_formats
+airflow-test:
+	$(AF) dags test $(DAG) --conf '$(CONF)'
+
+airflow-logs:
+	docker compose --profile airflow logs -f airflow
+
+# ---------------------------------------------------------------------------
+# Jupyter (optional): notebooks in notebooks/ -> Kyuubi -> Spark
+# ---------------------------------------------------------------------------
+
+## start JupyterLab (http://localhost:8888, no token)
+jupyter:
+	docker compose --profile jupyter up -d --build jupyter
+	@echo "JupyterLab: http://localhost:8888/lab/tree/notebooks/00_start_here.ipynb"
+
+jupyter-stop:
+	docker compose --profile jupyter rm -sf jupyter
+
+jupyter-logs:
+	docker compose --profile jupyter logs -f jupyter
+
 ps:
-	docker compose --profile kafka ps
+	docker compose --profile kafka --profile airflow --profile jupyter ps
 
 logs:
 	docker compose logs -f kyuubi
@@ -138,8 +189,8 @@ logs:
 all: up jars upload test
 
 down:
-	docker compose --profile kafka --profile tools down
+	docker compose --profile kafka --profile tools --profile airflow --profile jupyter down
 
 ## stop and delete all data (buckets, metastore DB, connector jars, maven cache)
 clean:
-	docker compose --profile kafka --profile tools down -v
+	docker compose --profile kafka --profile tools --profile airflow --profile jupyter down -v

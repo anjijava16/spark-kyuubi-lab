@@ -338,6 +338,94 @@ services:
     networks: [lab]
 
   # ------------------------------------------------------------------
+  # Orchestration: Airflow 3 - OPTIONAL (profile "airflow": make airflow)
+  # UI http://localhost:8085 (no login in the lab). DAGs in ./airflow/dags
+  # submit jobs to Kyuubi over REST and run SQL over Kyuubi's JDBC port.
+  # ------------------------------------------------------------------
+  airflow:
+    image: spark-kyuubi-lab/airflow:local
+    build:
+      context: ./docker/airflow
+      args:
+        AIRFLOW_IMAGE: ${AIRFLOW_IMAGE:-apache/airflow:3.3.2-python3.12}
+    profiles: ["airflow"]
+    hostname: airflow
+    command: standalone
+    environment:
+      AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:airflow@postgres:5432/airflow
+      AIRFLOW__CORE__EXECUTOR: LocalExecutor
+      AIRFLOW__CORE__LOAD_EXAMPLES: "false"
+      AIRFLOW__CORE__DAGS_ARE_PAUSED_AT_CREATION: "false"   # every lab DAG is manual (schedule=None)
+      AIRFLOW__CORE__SIMPLE_AUTH_MANAGER_ALL_ADMINS: "true" # lab only: no login
+      AIRFLOW__CORE__FERNET_KEY: ${AIRFLOW_FERNET_KEY:-Rbhu0FNiUldbCMAN5IzrMVQ3FNyzNUQyrjeWkFA538U=}
+      AIRFLOW__API_AUTH__JWT_SECRET: ${AIRFLOW_JWT_SECRET:-9c2fc2bd9762b7892c280f147dea405861535c297953cc67}
+      AIRFLOW__DAG_PROCESSOR__REFRESH_INTERVAL: "30"
+      AIRFLOW__CORE__MAX_ACTIVE_TASKS_PER_DAG: "2"          # the worker has 4 cores
+      # what the DAGs use to reach the lab
+      LAB_ROOT: /opt/lab
+      # helpers next to the DAGs + the lab client code (job_catalog, lab_runner, ...)
+      PYTHONPATH: /opt/airflow/dags:/opt/lab/client
+      KYUUBI_REST_URL: http://kyuubi:10099
+      KYUUBI_JDBC_HOST: kyuubi
+      KYUUBI_USER: airflow
+      KAFKA_BOOTSTRAP: kafka:9092
+      S3_ENDPOINT: http://rustfs:9000
+      PG_HOST: postgres
+      SPARK_VERSION: ${SPARK_VERSION:-4.1.3}
+      RUSTFS_ACCESS_KEY: ${RUSTFS_ACCESS_KEY:-rustfsadmin}
+      RUSTFS_SECRET_KEY: ${RUSTFS_SECRET_KEY:-rustfsadmin123}
+    volumes:
+      - ./airflow/dags:/opt/airflow/dags
+      - ./client:/opt/lab/client:ro
+      - ./jobs:/opt/lab/jobs:ro
+      - airflow-logs:/opt/airflow/logs
+    ports:
+      - "8085:8080"
+    depends_on:
+      pg-init:
+        condition: service_completed_successfully
+      kyuubi:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fs http://localhost:8080/api/v2/monitor/health >/dev/null || exit 1"]
+      interval: 15s
+      timeout: 10s
+      retries: 20
+      start_period: 60s
+    restart: unless-stopped
+    networks: [lab]
+
+  # ------------------------------------------------------------------
+  # Notebooks: JupyterLab - OPTIONAL (profile "jupyter": make jupyter)
+  # http://localhost:8888, notebooks in ./notebooks. They call Kyuubi
+  # (REST batches + JDBC SQL) through client/kyuubi_lab.py.
+  # ------------------------------------------------------------------
+  jupyter:
+    image: spark-kyuubi-lab/jupyter:local
+    build:
+      context: ./docker/jupyter
+    profiles: ["jupyter"]
+    hostname: jupyter
+    environment:
+      SPARK_VERSION: ${SPARK_VERSION:-4.1.3}
+      KYUUBI_USER: notebook
+      AIRFLOW_URL: http://airflow:8080     # only if you also run `make airflow`
+      PG_HOST: postgres
+      RUSTFS_ACCESS_KEY: ${RUSTFS_ACCESS_KEY:-rustfsadmin}
+      RUSTFS_SECRET_KEY: ${RUSTFS_SECRET_KEY:-rustfsadmin123}
+    volumes:
+      - ./notebooks:/home/lab/work/notebooks
+      - ./client:/home/lab/work/client:ro
+      - ./jobs:/home/lab/work/jobs:ro
+    ports:
+      - "8888:8888"
+    depends_on:
+      kyuubi:
+        condition: service_healthy
+    restart: unless-stopped
+    networks: [lab]
+
+  # ------------------------------------------------------------------
   # Tools (profile "tools", only run on demand)
   # ------------------------------------------------------------------
 
@@ -385,6 +473,7 @@ volumes:
   pg-data:
   m2-cache:
   lakehouse-jars:
+  airflow-logs:
 
 networks:
   lab:

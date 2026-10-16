@@ -7,7 +7,9 @@ For each job you get the kyuubi_submit.py command, the exact JSON body sent
 to POST /api/v1/batches (built by the same build_request() the client
 uses), a curl command, and a kyuubi-ctl YAML. Streaming jobs also get an
 always-on variant, and local helpers (producers, consumers) get their
-commands.
+commands. After the jobs come the Airflow DAGs (how to trigger each one:
+make, Airflow CLI, Airflow REST, Python) and the Jupyter notebooks, both
+from client/orchestration.py, checked against airflow/dags/ and notebooks/.
 
     python3 client/gen_payloads.py          (or: make payloads)
 
@@ -23,6 +25,7 @@ ROOT = os.path.normpath(os.path.join(HERE, ".."))
 sys.path.insert(0, HERE)
 from job_catalog import CASES, GROUPS, MANUAL  # noqa: E402
 from kyuubi_submit import build_request, lakehouse_conf  # noqa: E402
+from orchestration import DAGS, NOTEBOOKS  # noqa: E402
 
 URL = "http://localhost:10099"
 RUN_ID = "demo1"            # stands in for {run_id}
@@ -250,10 +253,99 @@ States go `PENDING -> RUNNING -> FINISHED | ERROR | CANCELED`.
 """
 
 
+AIRFLOW = "http://localhost:8085"
+JUPYTER = "http://localhost:8888"
+TOKEN = (f"TOKEN=$(curl -s {AIRFLOW}/auth/token | "
+         "python3 -c 'import sys, json; print(json.load(sys.stdin)[\"access_token\"])')")
+
+
+def check_orchestration():
+    """Fail loudly if the registry and the real DAG/notebook files drift apart."""
+    names = {c["name"] for c in CASES + MANUAL}
+    problems = []
+    for d in DAGS:
+        path = os.path.join(ROOT, "airflow", "dags", d["file"])
+        if not os.path.isfile(path):
+            problems.append(f"DAG file missing: {d['file']}")
+            continue
+        text = open(path).read()
+        generated = d["dag_id"].startswith("kyuubi_tests_") and "make_group_dag" in text
+        if f'"{d["dag_id"]}"' not in text and not generated:
+            problems.append(f"dag_id {d['dag_id']} not found in {d['file']}")
+        problems += [f"{d['dag_id']}: unknown job {j}" for j in d["jobs"] if j != "<any>" and j not in names]
+    for n in NOTEBOOKS:
+        if not os.path.isfile(os.path.join(ROOT, "notebooks", n["file"])):
+            problems.append(f"notebook missing: {n['file']}")
+        problems += [f"{n['file']}: unknown job {j}" for j in n["jobs"] if j not in names]
+    if problems:
+        sys.exit("orchestration.py is out of date:\n  " + "\n  ".join(problems))
+
+
+def dag_entry(d):
+    conf = json.dumps(d["conf"]) if d["conf"] else "{}"
+    body = {"logical_date": None, "conf": d["conf"] or {}}
+    rest = "\n".join([
+        TOKEN,
+        f"curl -s -X PATCH {AIRFLOW}/api/v2/dags/{d['dag_id']} -H \"Authorization: Bearer $TOKEN\" \\",
+        "     -H 'Content-Type: application/json' -d '{\"is_paused\": false}'",
+        f"curl -s -X POST {AIRFLOW}/api/v2/dags/{d['dag_id']}/dagRuns -H \"Authorization: Bearer $TOKEN\" \\",
+        f"     -H 'Content-Type: application/json' -d '{json.dumps(body)}'",
+    ])
+    return dict(dag_id=d["dag_id"], file=f"airflow/dags/{d['file']}", what=d["what"], jobs=d["jobs"],
+                uses=d["uses"], conf=d["conf"],
+                make=f"make airflow-run DAG={d['dag_id']}" + (f" CONF='{conf}'" if d["conf"] else ""),
+                airflow_cli=f"docker compose --profile airflow exec airflow airflow dags trigger {d['dag_id']} --conf '{conf}'",
+                foreground=f"make airflow-test DAG={d['dag_id']}" + (f" CONF='{conf}'" if d["conf"] else ""),
+                rest_body=body, rest_curl=rest,
+                python=f"kyuubi_lab.airflow_trigger({d['dag_id']!r}, conf={d['conf'] or {}!r}, wait=True)",
+                ui=f"{AIRFLOW}/dags/{d['dag_id']}")
+
+
+def md_dag(e, n):
+    jobs = ", ".join(f"`{j}`" for j in e["jobs"])
+    return [f"### D{n}. `{e['dag_id']}`", "", e["what"], "",
+            f"* file: `{e['file']}`, UI: {e['ui']}",
+            f"* Kyuubi jobs: {jobs}", f"* talks to: {', '.join(e['uses'])}", "",
+            "```bash", f"{e['make']}", f"{e['airflow_cli']}", f"{e['foreground']}    # foreground, logs in your terminal",
+            "```", "", "Airflow REST (lab runs with no login; GET /auth/token hands out a token):", "",
+            "```bash", e["rest_curl"], "```", "", "From a notebook:", "", "```python", e["python"], "```", ""]
+
+
+def md_notebook(e, n):
+    return [f"### N{n}. `{e['file']}`", "", e["what"], "",
+            f"* open: {e['open']}",
+            f"* Kyuubi jobs: {', '.join(f'`{j}`' for j in e['jobs'])}" if len(e["jobs"]) < 12
+            else f"* Kyuubi jobs: all {len(e['jobs'])} catalog jobs",
+            f"* talks to: {', '.join(e['uses'])}", ""]
+
+
+ORCH_INTRO = f"""## Airflow DAGs
+
+Start Airflow with `make airflow` (UI {AIRFLOW}). Every task that runs a job
+sends exactly the batch payload shown in the job sections above, with name
+`airflow-<job>` and a run id `af<yyyymmddHHMMSS>` shared by the whole DAG run;
+SQL tasks go through Kyuubi JDBC (`kyuubi:10009`) as user `airflow` (or
+`airflow_lake` with Delta + Iceberg on). Chain: Airflow task -> Kyuubi REST ->
+spark-submit -> Spark.
+"""
+NB_INTRO = f"""## Jupyter notebooks
+
+Start JupyterLab with `make jupyter` ({JUPYTER}). The notebooks use
+`client/kyuubi_lab.py`: batches go through Kyuubi REST with name `nb-<job>`
+(user `notebook`), SQL through Kyuubi JDBC (user `notebook`, or `lake` with
+Delta + Iceberg). Notebook 11 triggers the Airflow DAGs.
+"""
+
+
 def main():
+    check_orchestration()
     catalog = [entry(c) for c in CASES] + [entry(c, manual=True) for c in MANUAL]
-    doc = {"generated_from": "client/job_catalog.py", "kyuubi_rest": f"{URL}/api/v1/batches",
-           "run_id_placeholder": RUN_ID, "groups": GROUPS, "jobs": catalog}
+    dags = [dag_entry(d) for d in DAGS]
+    notebooks = [dict(n, open=f"{JUPYTER}/lab/tree/notebooks/{n['file']}") for n in NOTEBOOKS]
+    doc = {"generated_from": "client/job_catalog.py + client/orchestration.py",
+           "kyuubi_rest": f"{URL}/api/v1/batches", "airflow": AIRFLOW, "jupyter": JUPYTER,
+           "run_id_placeholder": RUN_ID, "groups": GROUPS, "jobs": catalog,
+           "airflow_dags": dags, "notebooks": notebooks}
     with open(os.path.join(ROOT, "All_execution_payload.json"), "w") as f:
         json.dump(doc, f, indent=2)
         f.write("\n")
@@ -262,7 +354,8 @@ def main():
     for g in GROUPS:
         jobs = [e for e in catalog if e["group"] == g]
         md.append(f"- [{GROUP_TITLES[g]}](#{g}) ({len(jobs)})")
-    md.append("")
+    md += [f"- [Airflow DAGs](#airflow-dags) ({len(dags)})",
+           f"- [Jupyter notebooks](#jupyter-notebooks) ({len(notebooks)})", ""]
     n = 0
     for g in GROUPS:
         md += [f'<a id="{g}"></a>', f"## {GROUP_TITLES[g]}", ""]
@@ -270,12 +363,19 @@ def main():
             n += 1
             md += md_entry(e, n)
         md.append("")
+    md += [ORCH_INTRO]
+    for i, e in enumerate(dags, 1):
+        md += md_dag(e, i)
+    md += [NB_INTRO]
+    for i, e in enumerate(notebooks, 1):
+        md += md_notebook(e, i)
     with open(os.path.join(ROOT, "All_execution_payload.md"), "w") as f:
         f.write("\n".join(md))
     print(f"wrote All_execution_payload.md and .json: {len(catalog)} entries "
           f"({sum(1 for e in catalog if e['kind'] == 'batch')} Kyuubi batches, "
           f"{sum(1 for e in catalog if 'always_on' in e)} with always-on variants, "
-          f"{sum(1 for e in catalog if e['kind'] == 'local')} local commands)")
+          f"{sum(1 for e in catalog if e['kind'] == 'local')} local commands), "
+          f"{len(dags)} Airflow DAGs, {len(notebooks)} notebooks")
 
 
 if __name__ == "__main__":

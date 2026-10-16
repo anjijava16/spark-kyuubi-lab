@@ -46,6 +46,8 @@ States go `PENDING -> RUNNING -> FINISHED | ERROR | CANCELED`.
 - [Lakehouse: Iceberg, Delta Lake, Hudi](#lakehouse) (3)
 - [Project: order tracking (file stream into Iceberg, Delta, Postgres)](#orders) (7)
 - [Streaming: Kafka producer/consumer and file events](#streaming) (13)
+- [Airflow DAGs](#airflow-dags) (15)
+- [Jupyter notebooks](#jupyter-notebooks) (13)
 
 <a id="core"></a>
 ## Core: Python, Java and Scala jobs, uploads, Hive tables
@@ -2609,3 +2611,573 @@ From your Mac (`pip install kafka-python boto3` first):
 python client/producers/topic_tail.py orders.metrics --follow --bootstrap localhost:9094
 ```
 
+
+## Airflow DAGs
+
+Start Airflow with `make airflow` (UI http://localhost:8085). Every task that runs a job
+sends exactly the batch payload shown in the job sections above, with name
+`airflow-<job>` and a run id `af<yyyymmddHHMMSS>` shared by the whole DAG run;
+SQL tasks go through Kyuubi JDBC (`kyuubi:10009`) as user `airflow` (or
+`airflow_lake` with Delta + Iceberg on). Chain: Airflow task -> Kyuubi REST ->
+spark-submit -> Spark.
+
+### D1. `kyuubi_tests_all`
+
+Every catalog job, group by group (core, formats, hive, postgres, lakehouse, orders, streaming), then a pass/fail report. The Airflow version of `make test`.
+
+* file: `airflow/dags/kyuubi_test_suites.py`, UI: http://localhost:8085/dags/kyuubi_tests_all
+* Kyuubi jobs: `jar-sparkpi`, `py-smoke`, `py-upload`, `py-wordcount`, `py-hive-etl`, `py-pyfiles`, `py-conf-args`, `java-wordcount`, `scala-sales-report`, `py-expected-failure`, `formats`, `hive-elt`, `pg-file-to-pg`, `pg-pg-to-files`, `pg-pg-to-pg`, `iceberg`, `delta`, `hudi`, `orders-wave1`, `orders-stream1`, `orders-wave2`, `orders-stream2`, `orders-wave3`, `orders-stream3`, `orders-report`, `kafka-produce`, `kafka-consumer-basic`, `kafka-to-delta-pg`, `kafka-enrich-publish`, `kafka-windowed-metrics`, `kafka-batch-publish`, `file-drop-produce`, `file-drop-stream`, `verify-streaming`
+* talks to: kyuubi-rest
+
+```bash
+make airflow-run DAG=kyuubi_tests_all
+docker compose --profile airflow exec airflow airflow dags trigger kyuubi_tests_all --conf '{}'
+make airflow-test DAG=kyuubi_tests_all    # foreground, logs in your terminal
+```
+
+Airflow REST (lab runs with no login; GET /auth/token hands out a token):
+
+```bash
+TOKEN=$(curl -s http://localhost:8085/auth/token | python3 -c 'import sys, json; print(json.load(sys.stdin)["access_token"])')
+curl -s -X PATCH http://localhost:8085/api/v2/dags/kyuubi_tests_all -H "Authorization: Bearer $TOKEN" \
+     -H 'Content-Type: application/json' -d '{"is_paused": false}'
+curl -s -X POST http://localhost:8085/api/v2/dags/kyuubi_tests_all/dagRuns -H "Authorization: Bearer $TOKEN" \
+     -H 'Content-Type: application/json' -d '{"logical_date": null, "conf": {}}'
+```
+
+From a notebook:
+
+```python
+kyuubi_lab.airflow_trigger('kyuubi_tests_all', conf={}, wait=True)
+```
+
+### D2. `kyuubi_tests_core`
+
+The `core` test group only, with the same dependencies as `make test-core`.
+
+* file: `airflow/dags/kyuubi_test_suites.py`, UI: http://localhost:8085/dags/kyuubi_tests_core
+* Kyuubi jobs: `jar-sparkpi`, `py-smoke`, `py-upload`, `py-wordcount`, `py-hive-etl`, `py-pyfiles`, `py-conf-args`, `java-wordcount`, `scala-sales-report`, `py-expected-failure`
+* talks to: kyuubi-rest
+
+```bash
+make airflow-run DAG=kyuubi_tests_core
+docker compose --profile airflow exec airflow airflow dags trigger kyuubi_tests_core --conf '{}'
+make airflow-test DAG=kyuubi_tests_core    # foreground, logs in your terminal
+```
+
+Airflow REST (lab runs with no login; GET /auth/token hands out a token):
+
+```bash
+TOKEN=$(curl -s http://localhost:8085/auth/token | python3 -c 'import sys, json; print(json.load(sys.stdin)["access_token"])')
+curl -s -X PATCH http://localhost:8085/api/v2/dags/kyuubi_tests_core -H "Authorization: Bearer $TOKEN" \
+     -H 'Content-Type: application/json' -d '{"is_paused": false}'
+curl -s -X POST http://localhost:8085/api/v2/dags/kyuubi_tests_core/dagRuns -H "Authorization: Bearer $TOKEN" \
+     -H 'Content-Type: application/json' -d '{"logical_date": null, "conf": {}}'
+```
+
+From a notebook:
+
+```python
+kyuubi_lab.airflow_trigger('kyuubi_tests_core', conf={}, wait=True)
+```
+
+### D3. `kyuubi_tests_formats`
+
+The `formats` test group only, with the same dependencies as `make test-formats`.
+
+* file: `airflow/dags/kyuubi_test_suites.py`, UI: http://localhost:8085/dags/kyuubi_tests_formats
+* Kyuubi jobs: `formats`
+* talks to: kyuubi-rest
+
+```bash
+make airflow-run DAG=kyuubi_tests_formats
+docker compose --profile airflow exec airflow airflow dags trigger kyuubi_tests_formats --conf '{}'
+make airflow-test DAG=kyuubi_tests_formats    # foreground, logs in your terminal
+```
+
+Airflow REST (lab runs with no login; GET /auth/token hands out a token):
+
+```bash
+TOKEN=$(curl -s http://localhost:8085/auth/token | python3 -c 'import sys, json; print(json.load(sys.stdin)["access_token"])')
+curl -s -X PATCH http://localhost:8085/api/v2/dags/kyuubi_tests_formats -H "Authorization: Bearer $TOKEN" \
+     -H 'Content-Type: application/json' -d '{"is_paused": false}'
+curl -s -X POST http://localhost:8085/api/v2/dags/kyuubi_tests_formats/dagRuns -H "Authorization: Bearer $TOKEN" \
+     -H 'Content-Type: application/json' -d '{"logical_date": null, "conf": {}}'
+```
+
+From a notebook:
+
+```python
+kyuubi_lab.airflow_trigger('kyuubi_tests_formats', conf={}, wait=True)
+```
+
+### D4. `kyuubi_tests_hive`
+
+The `hive` test group only, with the same dependencies as `make test-hive`.
+
+* file: `airflow/dags/kyuubi_test_suites.py`, UI: http://localhost:8085/dags/kyuubi_tests_hive
+* Kyuubi jobs: `hive-elt`
+* talks to: kyuubi-rest
+
+```bash
+make airflow-run DAG=kyuubi_tests_hive
+docker compose --profile airflow exec airflow airflow dags trigger kyuubi_tests_hive --conf '{}'
+make airflow-test DAG=kyuubi_tests_hive    # foreground, logs in your terminal
+```
+
+Airflow REST (lab runs with no login; GET /auth/token hands out a token):
+
+```bash
+TOKEN=$(curl -s http://localhost:8085/auth/token | python3 -c 'import sys, json; print(json.load(sys.stdin)["access_token"])')
+curl -s -X PATCH http://localhost:8085/api/v2/dags/kyuubi_tests_hive -H "Authorization: Bearer $TOKEN" \
+     -H 'Content-Type: application/json' -d '{"is_paused": false}'
+curl -s -X POST http://localhost:8085/api/v2/dags/kyuubi_tests_hive/dagRuns -H "Authorization: Bearer $TOKEN" \
+     -H 'Content-Type: application/json' -d '{"logical_date": null, "conf": {}}'
+```
+
+From a notebook:
+
+```python
+kyuubi_lab.airflow_trigger('kyuubi_tests_hive', conf={}, wait=True)
+```
+
+### D5. `kyuubi_tests_postgres`
+
+The `postgres` test group only, with the same dependencies as `make test-postgres`.
+
+* file: `airflow/dags/kyuubi_test_suites.py`, UI: http://localhost:8085/dags/kyuubi_tests_postgres
+* Kyuubi jobs: `pg-file-to-pg`, `pg-pg-to-files`, `pg-pg-to-pg`
+* talks to: kyuubi-rest
+
+```bash
+make airflow-run DAG=kyuubi_tests_postgres
+docker compose --profile airflow exec airflow airflow dags trigger kyuubi_tests_postgres --conf '{}'
+make airflow-test DAG=kyuubi_tests_postgres    # foreground, logs in your terminal
+```
+
+Airflow REST (lab runs with no login; GET /auth/token hands out a token):
+
+```bash
+TOKEN=$(curl -s http://localhost:8085/auth/token | python3 -c 'import sys, json; print(json.load(sys.stdin)["access_token"])')
+curl -s -X PATCH http://localhost:8085/api/v2/dags/kyuubi_tests_postgres -H "Authorization: Bearer $TOKEN" \
+     -H 'Content-Type: application/json' -d '{"is_paused": false}'
+curl -s -X POST http://localhost:8085/api/v2/dags/kyuubi_tests_postgres/dagRuns -H "Authorization: Bearer $TOKEN" \
+     -H 'Content-Type: application/json' -d '{"logical_date": null, "conf": {}}'
+```
+
+From a notebook:
+
+```python
+kyuubi_lab.airflow_trigger('kyuubi_tests_postgres', conf={}, wait=True)
+```
+
+### D6. `kyuubi_tests_lakehouse`
+
+The `lakehouse` test group only, with the same dependencies as `make test-lakehouse`.
+
+* file: `airflow/dags/kyuubi_test_suites.py`, UI: http://localhost:8085/dags/kyuubi_tests_lakehouse
+* Kyuubi jobs: `iceberg`, `delta`, `hudi`
+* talks to: kyuubi-rest
+
+```bash
+make airflow-run DAG=kyuubi_tests_lakehouse
+docker compose --profile airflow exec airflow airflow dags trigger kyuubi_tests_lakehouse --conf '{}'
+make airflow-test DAG=kyuubi_tests_lakehouse    # foreground, logs in your terminal
+```
+
+Airflow REST (lab runs with no login; GET /auth/token hands out a token):
+
+```bash
+TOKEN=$(curl -s http://localhost:8085/auth/token | python3 -c 'import sys, json; print(json.load(sys.stdin)["access_token"])')
+curl -s -X PATCH http://localhost:8085/api/v2/dags/kyuubi_tests_lakehouse -H "Authorization: Bearer $TOKEN" \
+     -H 'Content-Type: application/json' -d '{"is_paused": false}'
+curl -s -X POST http://localhost:8085/api/v2/dags/kyuubi_tests_lakehouse/dagRuns -H "Authorization: Bearer $TOKEN" \
+     -H 'Content-Type: application/json' -d '{"logical_date": null, "conf": {}}'
+```
+
+From a notebook:
+
+```python
+kyuubi_lab.airflow_trigger('kyuubi_tests_lakehouse', conf={}, wait=True)
+```
+
+### D7. `kyuubi_tests_orders`
+
+The `orders` test group only, with the same dependencies as `make test-orders`.
+
+* file: `airflow/dags/kyuubi_test_suites.py`, UI: http://localhost:8085/dags/kyuubi_tests_orders
+* Kyuubi jobs: `orders-wave1`, `orders-stream1`, `orders-wave2`, `orders-stream2`, `orders-wave3`, `orders-stream3`, `orders-report`
+* talks to: kyuubi-rest
+
+```bash
+make airflow-run DAG=kyuubi_tests_orders
+docker compose --profile airflow exec airflow airflow dags trigger kyuubi_tests_orders --conf '{}'
+make airflow-test DAG=kyuubi_tests_orders    # foreground, logs in your terminal
+```
+
+Airflow REST (lab runs with no login; GET /auth/token hands out a token):
+
+```bash
+TOKEN=$(curl -s http://localhost:8085/auth/token | python3 -c 'import sys, json; print(json.load(sys.stdin)["access_token"])')
+curl -s -X PATCH http://localhost:8085/api/v2/dags/kyuubi_tests_orders -H "Authorization: Bearer $TOKEN" \
+     -H 'Content-Type: application/json' -d '{"is_paused": false}'
+curl -s -X POST http://localhost:8085/api/v2/dags/kyuubi_tests_orders/dagRuns -H "Authorization: Bearer $TOKEN" \
+     -H 'Content-Type: application/json' -d '{"logical_date": null, "conf": {}}'
+```
+
+From a notebook:
+
+```python
+kyuubi_lab.airflow_trigger('kyuubi_tests_orders', conf={}, wait=True)
+```
+
+### D8. `kyuubi_tests_streaming`
+
+The `streaming` test group only, with the same dependencies as `make test-streaming`.
+
+* file: `airflow/dags/kyuubi_test_suites.py`, UI: http://localhost:8085/dags/kyuubi_tests_streaming
+* Kyuubi jobs: `kafka-produce`, `kafka-consumer-basic`, `kafka-to-delta-pg`, `kafka-enrich-publish`, `kafka-windowed-metrics`, `kafka-batch-publish`, `file-drop-produce`, `file-drop-stream`, `verify-streaming`
+* talks to: kyuubi-rest, kafka
+
+```bash
+make airflow-run DAG=kyuubi_tests_streaming
+docker compose --profile airflow exec airflow airflow dags trigger kyuubi_tests_streaming --conf '{}'
+make airflow-test DAG=kyuubi_tests_streaming    # foreground, logs in your terminal
+```
+
+Airflow REST (lab runs with no login; GET /auth/token hands out a token):
+
+```bash
+TOKEN=$(curl -s http://localhost:8085/auth/token | python3 -c 'import sys, json; print(json.load(sys.stdin)["access_token"])')
+curl -s -X PATCH http://localhost:8085/api/v2/dags/kyuubi_tests_streaming -H "Authorization: Bearer $TOKEN" \
+     -H 'Content-Type: application/json' -d '{"is_paused": false}'
+curl -s -X POST http://localhost:8085/api/v2/dags/kyuubi_tests_streaming/dagRuns -H "Authorization: Bearer $TOKEN" \
+     -H 'Content-Type: application/json' -d '{"logical_date": null, "conf": {}}'
+```
+
+From a notebook:
+
+```python
+kyuubi_lab.airflow_trigger('kyuubi_tests_streaming', conf={}, wait=True)
+```
+
+### D9. `kyuubi_run_any_job`
+
+Pick any catalog job in the trigger form; optional args (replace), extra_args (append) and Spark conf.
+
+* file: `airflow/dags/kyuubi_run_any_job.py`, UI: http://localhost:8085/dags/kyuubi_run_any_job
+* Kyuubi jobs: `<any>`
+* talks to: kyuubi-rest
+
+```bash
+make airflow-run DAG=kyuubi_run_any_job CONF='{"job": "iceberg", "args": null, "extra_args": [], "conf": {"spark.executor.memory": "1g"}}'
+docker compose --profile airflow exec airflow airflow dags trigger kyuubi_run_any_job --conf '{"job": "iceberg", "args": null, "extra_args": [], "conf": {"spark.executor.memory": "1g"}}'
+make airflow-test DAG=kyuubi_run_any_job CONF='{"job": "iceberg", "args": null, "extra_args": [], "conf": {"spark.executor.memory": "1g"}}'    # foreground, logs in your terminal
+```
+
+Airflow REST (lab runs with no login; GET /auth/token hands out a token):
+
+```bash
+TOKEN=$(curl -s http://localhost:8085/auth/token | python3 -c 'import sys, json; print(json.load(sys.stdin)["access_token"])')
+curl -s -X PATCH http://localhost:8085/api/v2/dags/kyuubi_run_any_job -H "Authorization: Bearer $TOKEN" \
+     -H 'Content-Type: application/json' -d '{"is_paused": false}'
+curl -s -X POST http://localhost:8085/api/v2/dags/kyuubi_run_any_job/dagRuns -H "Authorization: Bearer $TOKEN" \
+     -H 'Content-Type: application/json' -d '{"logical_date": null, "conf": {"job": "iceberg", "args": null, "extra_args": [], "conf": {"spark.executor.memory": "1g"}}}'
+```
+
+From a notebook:
+
+```python
+kyuubi_lab.airflow_trigger('kyuubi_run_any_job', conf={'job': 'iceberg', 'args': None, 'extra_args': [], 'conf': {'spark.executor.memory': '1g'}}, wait=True)
+```
+
+### D10. `lakehouse_daily_elt`
+
+Daily pipeline (02:00, created paused): S3 sensor -> Hive ELT (TEXTFILE/ORC/Parquet/RCFILE) -> formats -> Postgres file/table jobs -> Iceberg, Delta, Hudi -> SQL quality checks over Kyuubi JDBC -> top region per month.
+
+* file: `airflow/dags/lakehouse_daily_elt.py`, UI: http://localhost:8085/dags/lakehouse_daily_elt
+* Kyuubi jobs: `hive-elt`, `formats`, `pg-file-to-pg`, `pg-pg-to-files`, `pg-pg-to-pg`, `iceberg`, `delta`, `hudi`
+* talks to: rustfs, kyuubi-rest, kyuubi-jdbc
+
+```bash
+make airflow-run DAG=lakehouse_daily_elt
+docker compose --profile airflow exec airflow airflow dags trigger lakehouse_daily_elt --conf '{}'
+make airflow-test DAG=lakehouse_daily_elt    # foreground, logs in your terminal
+```
+
+Airflow REST (lab runs with no login; GET /auth/token hands out a token):
+
+```bash
+TOKEN=$(curl -s http://localhost:8085/auth/token | python3 -c 'import sys, json; print(json.load(sys.stdin)["access_token"])')
+curl -s -X PATCH http://localhost:8085/api/v2/dags/lakehouse_daily_elt -H "Authorization: Bearer $TOKEN" \
+     -H 'Content-Type: application/json' -d '{"is_paused": false}'
+curl -s -X POST http://localhost:8085/api/v2/dags/lakehouse_daily_elt/dagRuns -H "Authorization: Bearer $TOKEN" \
+     -H 'Content-Type: application/json' -d '{"logical_date": null, "conf": {}}'
+```
+
+From a notebook:
+
+```python
+kyuubi_lab.airflow_trigger('lakehouse_daily_elt', conf={}, wait=True)
+```
+
+### D11. `kafka_streaming_pipeline`
+
+Producer -> Kafka -> four Structured Streaming jobs (--available-now) -> Kafka/Delta/Postgres, Spark batch backfill to Kafka, file-event stream, verify job, then Python checks of the topics and Postgres. Skips itself when Kafka isn't installed.
+
+* file: `airflow/dags/kafka_streaming_pipeline.py`, UI: http://localhost:8085/dags/kafka_streaming_pipeline
+* Kyuubi jobs: `kafka-produce`, `kafka-consumer-basic`, `kafka-to-delta-pg`, `kafka-enrich-publish`, `kafka-windowed-metrics`, `kafka-batch-publish`, `file-drop-produce`, `file-drop-stream`, `verify-streaming`
+* talks to: kafka, kyuubi-rest, postgres, rustfs
+
+```bash
+make airflow-run DAG=kafka_streaming_pipeline CONF='{"orders": 40}'
+docker compose --profile airflow exec airflow airflow dags trigger kafka_streaming_pipeline --conf '{"orders": 40}'
+make airflow-test DAG=kafka_streaming_pipeline CONF='{"orders": 40}'    # foreground, logs in your terminal
+```
+
+Airflow REST (lab runs with no login; GET /auth/token hands out a token):
+
+```bash
+TOKEN=$(curl -s http://localhost:8085/auth/token | python3 -c 'import sys, json; print(json.load(sys.stdin)["access_token"])')
+curl -s -X PATCH http://localhost:8085/api/v2/dags/kafka_streaming_pipeline -H "Authorization: Bearer $TOKEN" \
+     -H 'Content-Type: application/json' -d '{"is_paused": false}'
+curl -s -X POST http://localhost:8085/api/v2/dags/kafka_streaming_pipeline/dagRuns -H "Authorization: Bearer $TOKEN" \
+     -H 'Content-Type: application/json' -d '{"logical_date": null, "conf": {"orders": 40}}'
+```
+
+From a notebook:
+
+```python
+kyuubi_lab.airflow_trigger('kafka_streaming_pipeline', conf={'orders': 40}, wait=True)
+```
+
+### D12. `kafka_live_streams`
+
+Always-on streams: starts jobs 31/32/33 without --available-now (1 core each), waits until RUNNING, feeds them with the producer for N minutes, checks Postgres and Kafka, then kills the three batches (always, even after a failure).
+
+* file: `airflow/dags/kafka_live_streams.py`, UI: http://localhost:8085/dags/kafka_live_streams
+* Kyuubi jobs: `kafka-to-delta-pg`, `kafka-enrich-publish`, `kafka-windowed-metrics`
+* talks to: kafka, kyuubi-rest, postgres
+
+```bash
+make airflow-run DAG=kafka_live_streams CONF='{"minutes": 2, "rate": 5}'
+docker compose --profile airflow exec airflow airflow dags trigger kafka_live_streams --conf '{"minutes": 2, "rate": 5}'
+make airflow-test DAG=kafka_live_streams CONF='{"minutes": 2, "rate": 5}'    # foreground, logs in your terminal
+```
+
+Airflow REST (lab runs with no login; GET /auth/token hands out a token):
+
+```bash
+TOKEN=$(curl -s http://localhost:8085/auth/token | python3 -c 'import sys, json; print(json.load(sys.stdin)["access_token"])')
+curl -s -X PATCH http://localhost:8085/api/v2/dags/kafka_live_streams -H "Authorization: Bearer $TOKEN" \
+     -H 'Content-Type: application/json' -d '{"is_paused": false}'
+curl -s -X POST http://localhost:8085/api/v2/dags/kafka_live_streams/dagRuns -H "Authorization: Bearer $TOKEN" \
+     -H 'Content-Type: application/json' -d '{"logical_date": null, "conf": {"minutes": 2, "rate": 5}}'
+```
+
+From a notebook:
+
+```python
+kyuubi_lab.airflow_trigger('kafka_live_streams', conf={'minutes': 2, 'rate': 5}, wait=True)
+```
+
+### D13. `kyuubi_sql_reporting`
+
+SQL only, over Kyuubi JDBC: branch on whether demo.orders exists (build it with a batch if not), CTAS into Parquet/ORC + a view, quality checks, copy into Iceberg and Delta, upsert the report into Postgres shop.report_region_month.
+
+* file: `airflow/dags/kyuubi_sql_reporting.py`, UI: http://localhost:8085/dags/kyuubi_sql_reporting
+* Kyuubi jobs: `py-hive-etl`
+* talks to: kyuubi-jdbc, kyuubi-rest, postgres
+
+```bash
+make airflow-run DAG=kyuubi_sql_reporting
+docker compose --profile airflow exec airflow airflow dags trigger kyuubi_sql_reporting --conf '{}'
+make airflow-test DAG=kyuubi_sql_reporting    # foreground, logs in your terminal
+```
+
+Airflow REST (lab runs with no login; GET /auth/token hands out a token):
+
+```bash
+TOKEN=$(curl -s http://localhost:8085/auth/token | python3 -c 'import sys, json; print(json.load(sys.stdin)["access_token"])')
+curl -s -X PATCH http://localhost:8085/api/v2/dags/kyuubi_sql_reporting -H "Authorization: Bearer $TOKEN" \
+     -H 'Content-Type: application/json' -d '{"is_paused": false}'
+curl -s -X POST http://localhost:8085/api/v2/dags/kyuubi_sql_reporting/dagRuns -H "Authorization: Bearer $TOKEN" \
+     -H 'Content-Type: application/json' -d '{"logical_date": null, "conf": {}}'
+```
+
+From a notebook:
+
+```python
+kyuubi_lab.airflow_trigger('kyuubi_sql_reporting', conf={}, wait=True)
+```
+
+### D14. `file_event_pipeline`
+
+JSON files dropped into s3a://data/stream/landing -> sensor -> file-source stream -> Parquet silver -> SQL on the folder -> second run processes nothing (checkpoint).
+
+* file: `airflow/dags/file_event_pipeline.py`, UI: http://localhost:8085/dags/file_event_pipeline
+* Kyuubi jobs: `file-drop-produce`, `file-drop-stream`
+* talks to: rustfs, kyuubi-rest, kyuubi-jdbc
+
+```bash
+make airflow-run DAG=file_event_pipeline CONF='{"orders": 20, "files": 3}'
+docker compose --profile airflow exec airflow airflow dags trigger file_event_pipeline --conf '{"orders": 20, "files": 3}'
+make airflow-test DAG=file_event_pipeline CONF='{"orders": 20, "files": 3}'    # foreground, logs in your terminal
+```
+
+Airflow REST (lab runs with no login; GET /auth/token hands out a token):
+
+```bash
+TOKEN=$(curl -s http://localhost:8085/auth/token | python3 -c 'import sys, json; print(json.load(sys.stdin)["access_token"])')
+curl -s -X PATCH http://localhost:8085/api/v2/dags/file_event_pipeline -H "Authorization: Bearer $TOKEN" \
+     -H 'Content-Type: application/json' -d '{"is_paused": false}'
+curl -s -X POST http://localhost:8085/api/v2/dags/file_event_pipeline/dagRuns -H "Authorization: Bearer $TOKEN" \
+     -H 'Content-Type: application/json' -d '{"logical_date": null, "conf": {"orders": 20, "files": 3}}'
+```
+
+From a notebook:
+
+```python
+kyuubi_lab.airflow_trigger('file_event_pipeline', conf={'orders': 20, 'files': 3}, wait=True)
+```
+
+### D15. `order_tracking_project`
+
+Order tracking project: three waves, each streamed into Iceberg + Delta + Postgres, SLA report, then SQL on the Delta status table and the Iceberg event log.
+
+* file: `airflow/dags/order_tracking_project.py`, UI: http://localhost:8085/dags/order_tracking_project
+* Kyuubi jobs: `orders-wave1`, `orders-stream1`, `orders-wave2`, `orders-stream2`, `orders-wave3`, `orders-stream3`, `orders-report`
+* talks to: kyuubi-rest, kyuubi-jdbc, postgres
+
+```bash
+make airflow-run DAG=order_tracking_project
+docker compose --profile airflow exec airflow airflow dags trigger order_tracking_project --conf '{}'
+make airflow-test DAG=order_tracking_project    # foreground, logs in your terminal
+```
+
+Airflow REST (lab runs with no login; GET /auth/token hands out a token):
+
+```bash
+TOKEN=$(curl -s http://localhost:8085/auth/token | python3 -c 'import sys, json; print(json.load(sys.stdin)["access_token"])')
+curl -s -X PATCH http://localhost:8085/api/v2/dags/order_tracking_project -H "Authorization: Bearer $TOKEN" \
+     -H 'Content-Type: application/json' -d '{"is_paused": false}'
+curl -s -X POST http://localhost:8085/api/v2/dags/order_tracking_project/dagRuns -H "Authorization: Bearer $TOKEN" \
+     -H 'Content-Type: application/json' -d '{"logical_date": null, "conf": {}}'
+```
+
+From a notebook:
+
+```python
+kyuubi_lab.airflow_trigger('order_tracking_project', conf={}, wait=True)
+```
+
+## Jupyter notebooks
+
+Start JupyterLab with `make jupyter` (http://localhost:8888). The notebooks use
+`client/kyuubi_lab.py`: batches go through Kyuubi REST with name `nb-<job>`
+(user `notebook`), SQL through Kyuubi JDBC (user `notebook`, or `lake` with
+Delta + Iceberg). Notebook 11 triggers the Airflow DAGs.
+
+### N1. `00_start_here.ipynb`
+
+service check, the job catalog, a REST payload, the first job
+
+* open: http://localhost:8888/lab/tree/notebooks/00_start_here.ipynb
+* Kyuubi jobs: `py-smoke`
+* talks to: kyuubi-rest
+
+### N2. `01_kyuubi_rest_basics.ipynb`
+
+raw requests: JSON batch, multipart upload, polling, localLog, list, kill, expected failure
+
+* open: http://localhost:8888/lab/tree/notebooks/01_kyuubi_rest_basics.ipynb
+* Kyuubi jobs: `py-upload`, `py-expected-failure`
+* talks to: kyuubi-rest
+
+### N3. `02_kyuubi_sql_jdbc.ipynb`
+
+PyHive over Kyuubi JDBC: CTAS Parquet/ORC, DESCRIBE FORMATTED, EXPLAIN, SET, views
+
+* open: http://localhost:8888/lab/tree/notebooks/02_kyuubi_sql_jdbc.ipynb
+* Kyuubi jobs: `py-hive-etl`
+* talks to: kyuubi-jdbc
+
+### N4. `03_file_formats_and_hive_elt.ipynb`
+
+format round trip, SQL on parquet/orc/json/avro folders, Hive ELT tables incl. RCFILE
+
+* open: http://localhost:8888/lab/tree/notebooks/03_file_formats_and_hive_elt.ipynb
+* Kyuubi jobs: `formats`, `hive-elt`
+* talks to: kyuubi-rest, kyuubi-jdbc, rustfs
+
+### N5. `04_postgres_pipelines.ipynb`
+
+file -> Postgres, Postgres -> Parquet/ORC/CSV, Postgres -> Postgres upsert (idempotency check)
+
+* open: http://localhost:8888/lab/tree/notebooks/04_postgres_pipelines.ipynb
+* Kyuubi jobs: `pg-file-to-pg`, `pg-pg-to-files`, `pg-pg-to-pg`
+* talks to: kyuubi-rest, kyuubi-jdbc, postgres, rustfs
+
+### N6. `05_lakehouse_iceberg_delta_hudi.ipynb`
+
+Iceberg snapshots + time travel, Delta history + time travel + change data feed, Hudi timeline
+
+* open: http://localhost:8888/lab/tree/notebooks/05_lakehouse_iceberg_delta_hudi.ipynb
+* Kyuubi jobs: `iceberg`, `delta`, `hudi`
+* talks to: kyuubi-rest, kyuubi-jdbc, rustfs
+
+### N7. `06_kafka_produce_consume.ipynb`
+
+Python producer -> orders.events, Spark consumer -> Parquet bronze, Kafka -> Delta + Postgres
+
+* open: http://localhost:8888/lab/tree/notebooks/06_kafka_produce_consume.ipynb
+* Kyuubi jobs: `kafka-produce`, `kafka-consumer-basic`, `kafka-to-delta-pg`
+* talks to: kafka, kyuubi-rest, kyuubi-jdbc, postgres
+
+### N8. `07_spark_publishes_to_kafka.ipynb`
+
+enrich + alerts, windowed metrics, batch backfill to Kafka, then the verify job
+
+* open: http://localhost:8888/lab/tree/notebooks/07_spark_publishes_to_kafka.ipynb
+* Kyuubi jobs: `kafka-enrich-publish`, `kafka-windowed-metrics`, `kafka-batch-publish`, `file-drop-stream`, `kafka-consumer-basic`, `kafka-to-delta-pg`, `verify-streaming`
+* talks to: kafka, kyuubi-rest, postgres, rustfs
+
+### N9. `08_file_event_streaming.ipynb`
+
+file drops -> file-source stream -> Parquet; rerun is a no-op; live mode with kill
+
+* open: http://localhost:8888/lab/tree/notebooks/08_file_event_streaming.ipynb
+* Kyuubi jobs: `file-drop-stream`
+* talks to: rustfs, kyuubi-rest, kyuubi-jdbc
+
+### N10. `09_order_tracking_project.ipynb`
+
+the three-wave order tracking project and its Iceberg/Delta/Postgres results
+
+* open: http://localhost:8888/lab/tree/notebooks/09_order_tracking_project.ipynb
+* Kyuubi jobs: `orders-wave1`, `orders-stream1`, `orders-wave2`, `orders-stream2`, `orders-wave3`, `orders-stream3`, `orders-report`
+* talks to: kyuubi-rest, kyuubi-jdbc, postgres
+
+### N11. `10_always_on_streams.ipynb`
+
+start jobs 31/32/33 always-on, feed them, watch Postgres/Kafka, kill them
+
+* open: http://localhost:8888/lab/tree/notebooks/10_always_on_streams.ipynb
+* Kyuubi jobs: `kafka-to-delta-pg`, `kafka-enrich-publish`, `kafka-windowed-metrics`
+* talks to: kafka, kyuubi-rest, postgres
+
+### N12. `11_airflow_from_notebook.ipynb`
+
+list DAGs, trigger kyuubi_run_any_job / kyuubi_sql_reporting / kafka_streaming_pipeline over Airflow REST
+
+* open: http://localhost:8888/lab/tree/notebooks/11_airflow_from_notebook.ipynb
+* Kyuubi jobs: `py-wordcount`
+* talks to: airflow, postgres
+
+### N13. `12_end_to_end_all.ipynb`
+
+every catalog job, group by group, with a pass/fail table and chart
+
+* open: http://localhost:8888/lab/tree/notebooks/12_end_to_end_all.ipynb
+* Kyuubi jobs: all 34 catalog jobs
+* talks to: kyuubi-rest

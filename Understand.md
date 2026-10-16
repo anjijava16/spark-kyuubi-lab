@@ -38,6 +38,9 @@ there and how to drive it.
 22. [Kafka: optional install](#22-kafka-optional-install)
 23. [Streaming: Kafka producers, consumers and file events](#23-streaming-kafka-producers-consumers-and-file-events)
 24. [All execution payloads](#24-all-execution-payloads)
+25. [Airflow: DAGs that run jobs through Kyuubi](#25-airflow-dags-that-run-jobs-through-kyuubi)
+26. [Jupyter: notebooks that call Kyuubi](#26-jupyter-notebooks-that-call-kyuubi)
+27. [Airflow and Jupyter: troubleshooting](#27-airflow-and-jupyter-troubleshooting)
 
 ---
 
@@ -337,6 +340,8 @@ spark-kyuubi-lab/
 │   ├── postgres/                 init-shop.sh + shop-schema.sql (app DB "shop")
 │   ├── lakehouse/fetch-lakehouse-jars.sh  Delta/Iceberg/Hudi/Kafka-connector jars -> shared volume
 │   ├── kafka/create-topics.sh    the lab's Kafka topics (optional Kafka add-on)
+│   ├── airflow/Dockerfile        Airflow 3.3 + PyHive, kafka-python, boto3 (optional)
+│   ├── jupyter/Dockerfile        JupyterLab + the same client libraries, no Spark (optional)
 │   └── hive-metastore/
 │       ├── Dockerfile            apache/hive:3.1.3 + s3a jars + Postgres JDBC
 │       └── start-metastore.sh    init schema once, then run the metastore
@@ -372,6 +377,20 @@ spark-kyuubi-lab/
 │   │       └── ScalaSalesReport.scala
 │   └── jars/                     build output lands here (spark-kyuubi-jobs.jar)
 │
+├── airflow/dags/                 Airflow DAGs (mounted into the airflow container)
+│   ├── kyuubi_ops.py             KyuubiBatchOperator + KyuubiSqlOperator
+│   ├── lab_common.py             job() helper, report task, S3 helpers
+│   ├── kyuubi_test_suites.py     kyuubi_tests_<group> + kyuubi_tests_all (from the catalog)
+│   ├── kyuubi_run_any_job.py     pick any job + args/conf in the trigger form
+│   ├── lakehouse_daily_elt.py    sensor -> Hive ELT -> formats -> Postgres -> Iceberg/Delta/Hudi -> SQL checks
+│   ├── kafka_streaming_pipeline.py   producer -> streams (available-now) -> verify
+│   ├── kafka_live_streams.py     start always-on streams, feed, check, stop
+│   ├── kyuubi_sql_reporting.py   SQL-only pipeline over Kyuubi JDBC
+│   ├── file_event_pipeline.py    file drops -> sensor -> file stream -> SQL
+│   └── order_tracking_project.py the order tracking project as a DAG
+│
+├── notebooks/                    00-12, mounted into JupyterLab
+│
 ├── data/                         uploaded to s3a://data/input/
 │   ├── sample.txt
 │   └── orders.csv                120 orders (with customer_id 1-30)
@@ -381,6 +400,9 @@ spark-kyuubi-lab/
     ├── run_tests.py              runs every sample job, prints pass/fail
     ├── job_catalog.py            every job's definition (tests + payload doc read this)
     ├── gen_payloads.py           writes All_execution_payload.md / .json
+    ├── lab_runner.py             runs one catalog job and judges it (tests, DAGs, notebooks share it)
+    ├── kyuubi_lab.py             notebook API: run(), sql(), pg(), topic(), airflow_trigger() ...
+    ├── orchestration.py          which DAG / notebook runs which jobs (for the payload doc)
     ├── producers/order_producer.py   Python producer app (Kafka or S3 file drops)
     ├── producers/topic_tail.py       Python consumer: print messages from a topic
     ├── batch-yaml/*.yaml         same jobs for Kyuubi's own kyuubi-ctl
@@ -1523,3 +1545,261 @@ the documented body.
 
 To add your own job: add an entry to `client/job_catalog.py`, then run
 `make payloads`. It's in the test suite and the payload docs at once.
+
+The same two files also list the 15 Airflow DAGs (trigger with make, the
+Airflow CLI, Airflow's REST API or Python) and the 13 notebooks, with the
+jobs each one runs. That part comes from `client/orchestration.py`, and
+`make payloads` refuses to write the files if a DAG id, notebook or job
+name in there doesn't exist.
+
+
+---
+
+## 25. Airflow: DAGs that run jobs through Kyuubi
+
+Airflow is optional, like Kafka. It doesn't run Spark and it doesn't call
+`spark-submit`. Each task is a thin client:
+
+```
+Airflow task --REST :10099--> Kyuubi --spark-submit--> Spark      (batch jobs)
+Airflow task --JDBC :10009--> Kyuubi --SQL engine---> Spark      (SQL tasks)
+```
+
+That's the same rule as the rest of the lab: nobody but Kyuubi talks to the
+Spark master.
+
+### Start it
+
+```bash
+make up              # the core stack, if it isn't running
+make airflow         # builds the image the first time (~3 min), then http://localhost:8085
+make airflow-dags    # the DAGs it loaded, and any import errors
+```
+
+The lab runs `airflow standalone` (API server, scheduler, DAG processor and
+triggerer in one container) with the LocalExecutor and its metadata database
+in the lab's Postgres (database `airflow`, created by `pg-init`). Login is off:
+the simple auth manager runs with `all_admins`, so the UI opens straight
+away. Fine for a laptop, not for anything shared.
+
+`airflow/dags`, `client/` and `jobs/` are mounted, not copied. Edit a DAG and
+Airflow picks it up within about 30 seconds; no rebuild.
+
+### The operators
+
+`airflow/dags/kyuubi_ops.py` has two operators. They're written for
+Airflow 3 (`airflow.sdk`), and they don't use any Kyuubi provider package,
+just the lab's own client code.
+
+**`KyuubiBatchOperator(job="delta")`** runs one job from
+`client/job_catalog.py`. It builds the same request `kyuubi_submit.py` and
+`make test` send (via `client/lab_runner.py`), posts it to Kyuubi, and then
+streams the driver log into the Airflow task log line by line. The task:
+
+- succeeds only if the batch ends in the state the catalog expects AND the
+  job printed its success line (every sample job prints one after its own
+  checks)
+- is *skipped* (pink, not red) if Kafka isn't installed or the jar isn't built
+- kills the Kyuubi batch if you stop the task in Airflow (mark failed, clear)
+- returns `{name, ok, state, batch_id, secs}` as its XCom
+
+Options you'll use: `args=[...]` replaces the job's own arguments,
+`extra_args=[...]` appends, `conf={...}` adds Spark conf. All three are
+templated. Every task in one DAG run shares a run id (`af` + the run's
+timestamp), which the streaming jobs use to find "their" events.
+
+**`KyuubiSqlOperator(sql=[...], checks=[...])`** runs SQL through Kyuubi's
+JDBC port with PyHive, as user `airflow`. `lake=True` opens the session as
+`airflow_lake` with Delta and Iceberg switched on (a separate engine, since
+engine conf is fixed when the engine starts). `checks` are
+`(query, rule)` pairs, for example `("SELECT count(*) FROM elt.orders_fact", ">0")`;
+one failed check fails the task.
+
+### The DAGs
+
+| DAG | what it does |
+|---|---|
+| `kyuubi_tests_all` | every catalog job, group after group, then a pass/fail report. `make test` as a DAG |
+| `kyuubi_tests_core` ... `kyuubi_tests_streaming` | one test group each (core, formats, hive, postgres, lakehouse, orders, streaming) |
+| `kyuubi_run_any_job` | pick any job from a dropdown, add args and conf. The Airflow version of `kyuubi_submit.py` |
+| `lakehouse_daily_elt` | S3 sensor, Hive ELT (TEXTFILE, ORC, partitioned Parquet, RCFILE), format conversions, file to Postgres, Postgres to files and to Postgres, Iceberg, Delta, Hudi, then SQL quality checks. Scheduled 02:00, created paused |
+| `kafka_streaming_pipeline` | producer, four Kafka streams (`--available-now`), Spark batch backfill to Kafka, file-event stream, the verify job, then Python checks of the topics and Postgres |
+| `kafka_live_streams` | starts jobs 31/32/33 always-on, waits for RUNNING, feeds them for N minutes, checks the outputs, and always kills the streams at the end |
+| `kyuubi_sql_reporting` | SQL only: branch on whether `demo.orders` exists, CTAS into Parquet and ORC, a view, checks, copies into Iceberg and Delta, upsert into Postgres |
+| `file_event_pipeline` | JSON files dropped into RustFS, a sensor that waits for them, the file-source stream, SQL straight on the Parquet folder, and a second run that processes nothing |
+| `order_tracking_project` | the three-wave project from section 20, with SQL on the Delta status table and the Iceberg event log |
+
+The test DAGs are generated from the job catalog, so a job you add there
+shows up as a task without touching Airflow. Dependencies follow each job's
+`after` list: if `pg-file-to-pg` fails, `pg-pg-to-files` turns
+`upstream_failed` instead of failing for a confusing reason. In
+`kyuubi_tests_all` the next group starts when the previous one is done,
+pass or fail, so one broken job doesn't hide the rest. The last task,
+`report`, prints a table of every task's state and fails the run if anything
+failed.
+
+Concurrency is capped at 2 tasks per DAG (`MAX_ACTIVE_TASKS_PER_DAG`) because
+every job asks for 2 cores and the worker has 4. `kafka_live_streams` is the
+exception: it runs three streams at 1 core each.
+
+### Triggering
+
+```bash
+make airflow-run DAG=kyuubi_tests_formats
+make airflow-run DAG=kyuubi_run_any_job CONF='{"job": "iceberg"}'
+make airflow-run DAG=kafka_live_streams CONF='{"minutes": 3, "rate": 10}'
+make airflow-test DAG=kyuubi_tests_hive       # runs in your terminal, logs inline
+```
+
+Or the UI: open a DAG, "Trigger", fill in the form. Or REST:
+
+```bash
+TOKEN=$(curl -s http://localhost:8085/auth/token | python3 -c 'import sys,json; print(json.load(sys.stdin)["access_token"])')
+curl -s -X POST http://localhost:8085/api/v2/dags/kyuubi_run_any_job/dagRuns \
+  -H "Authorization: Bearer $TOKEN" -H 'Content-Type: application/json' \
+  -d '{"logical_date": null, "conf": {"job": "hive-elt"}}'
+```
+
+`All_execution_payload.md` has these commands for every DAG. While a DAG
+runs you can watch the same batches in Kyuubi's UI
+(http://localhost:10099/ui): their names start with `airflow-`.
+
+### Writing your own DAG
+
+```python
+from airflow.sdk import DAG
+from kyuubi_ops import KyuubiBatchOperator, KyuubiSqlOperator
+from lab_common import DEFAULT_ARGS, START, report
+
+with DAG("my_pipeline", schedule=None, start_date=START, catchup=False,
+         default_args=DEFAULT_ARGS):
+    load = KyuubiBatchOperator(task_id="load", job="py-hive-etl")
+    custom = KyuubiBatchOperator(
+        task_id="custom",
+        case=dict(name="my-job", resource="s3a://jobs/python/my_job.py",
+                  remote=True, marker="MY JOB OK"),
+        args=["--run-date", "{{ dag_run.run_after.strftime('%Y-%m-%d') }}"])
+    check = KyuubiSqlOperator(task_id="check",
+        checks=[("SELECT count(*) FROM demo.orders", ">0")])
+    load >> custom >> check >> report()
+```
+
+`case=` takes the same fields as a catalog entry, so a job doesn't have to be
+in the catalog to run from Airflow. Put templated values in `args`, not
+inside `case` (only `args`, `extra_args`, `conf`, `job` and `run_id` are
+templated). Use `dag_run.run_after` rather than `ds`: in Airflow 3 a manual
+run can have no logical date. Upload the script first (`make upload`).
+
+---
+
+## 26. Jupyter: notebooks that call Kyuubi
+
+```bash
+make jupyter          # http://localhost:8888, no token
+```
+
+The Jupyter image has no Java and no Spark: just JupyterLab, pandas,
+matplotlib and the client libraries (requests, PyHive, psycopg2, boto3,
+kafka-python). Notebooks talk to Kyuubi exactly like the CLI does. The
+`notebooks/` folder is mounted, so what you save stays on your Mac.
+
+Everything goes through `client/kyuubi_lab.py`:
+
+```python
+import kyuubi_lab as lab
+lab.services()                            # what's reachable from here
+lab.run("iceberg")                        # catalog job via Kyuubi REST, waits, checks the marker
+lab.sql("SELECT * FROM demo.orders")      # Kyuubi JDBC -> pandas DataFrame
+lab.sql("SELECT * FROM ice.lab.orders.snapshots", lake=True)   # Delta + Iceberg session
+lab.pg("SELECT * FROM order_tracking")    # Postgres
+lab.s3_ls("data", "stream/landing/")      # RustFS
+lab.produce(orders=20)                    # producer -> Kafka
+lab.topic("orders.enriched")              # newest messages -> DataFrame
+lab.submit_no_wait("kafka-enrich-publish", extra_args=[])     # always-on stream, returns batch id
+lab.kill(batch_id)
+lab.airflow_trigger("kafka_streaming_pipeline", conf={"orders": 25}, wait=True)
+```
+
+The notebooks run as Kyuubi user `notebook`, so their SQL engine is separate
+from yours (`anji`) and from Airflow's. The first `sql()` call starts that
+engine, which takes 20-40 seconds; after that queries are quick.
+
+| notebook | covers |
+|---|---|
+| 00_start_here | service check, the catalog, what a payload looks like, first job |
+| 01_kyuubi_rest_basics | raw `requests`: JSON batch, multipart upload, polling, logs, list, kill, an expected failure |
+| 02_kyuubi_sql_jdbc | CTAS into Parquet and ORC, DESCRIBE FORMATTED, EXPLAIN, SET, window functions, views |
+| 03_file_formats_and_hive_elt | the format round trip, SQL straight on Parquet/ORC/JSON/Avro folders, the Hive ELT tables including RCFILE |
+| 04_postgres_pipelines | file to Postgres, Postgres to files, Postgres to Postgres, and proof the upsert is idempotent |
+| 05_lakehouse_iceberg_delta_hudi | Iceberg snapshots and time travel, Delta history, time travel and change data feed, the Hudi timeline |
+| 06_kafka_produce_consume | Python producer into Kafka, Spark consumer into Parquet, Kafka into Delta + Postgres |
+| 07_spark_publishes_to_kafka | enrichment and alerts, windowed metrics, batch backfill, then the verify job |
+| 08_file_event_streaming | file drops, the file-source stream, a no-op rerun, and live mode with a kill |
+| 09_order_tracking_project | the three waves and their Iceberg, Delta and Postgres results |
+| 10_always_on_streams | three always-on streams: start, feed, watch Postgres and Kafka, stop |
+| 11_airflow_from_notebook | list DAGs, trigger them, read task states (needs `make airflow`) |
+| 12_end_to_end_all | every catalog job with a pass/fail table and chart |
+
+Notebooks 06, 07 and 10 need Kafka. 12 skips the Kafka jobs if Kafka isn't
+there, and the JVM jobs until you `make jars && make upload`.
+
+Run the notebooks in order the first time: later ones read tables earlier
+ones create (02 needs `demo.orders`, which it builds if it's missing; 04
+uses the formats output from 03).
+
+---
+
+## 27. Airflow and Jupyter: troubleshooting
+
+**`make airflow` hangs on "waiting for Airflow".** The first start migrates
+the metadata database, which takes a minute or two. `make airflow-logs`
+shows progress. If it says it can't connect to the `airflow` database, your
+Postgres volume predates the Airflow add-on: `make pg-init` creates the
+database, then `make airflow` again.
+
+**A DAG is missing from the UI.** `make airflow-dags` prints import errors.
+The usual one is a typo in a DAG file; the DAG processor re-reads files
+every 30 seconds.
+
+**A task is pink (skipped).** On purpose: Kafka isn't installed
+(`make kafka-install`) or the Java/Scala jar isn't built (`make jars && make upload`).
+The task log says which.
+
+**A task failed with "finished but never printed ...".** The Spark job
+exited 0 but its own checks didn't run to the end. Read the task log: it's
+the full driver log from Kyuubi.
+
+**`kafka_live_streams` was stopped half way.** The `stop_streams` task runs
+whatever happened before it and kills the three batches. If you deleted the
+DAG run while it was going, kill them yourself: `make stream-list`,
+`make stream-stop`.
+
+**Runs sit in "queued".** The DAG is paused. `make airflow-run` and
+`lab.airflow_trigger()` unpause it for you; in the UI, flip the toggle.
+`lakehouse_daily_elt` is created paused on purpose because it has a schedule.
+
+**A notebook's `sql()` hangs for half a minute.** That's the engine
+starting for user `notebook`. Only the first call waits.
+
+**`lab.airflow_trigger` raises a connection error.** Airflow isn't running
+(`make airflow`). Jupyter reaches it at `http://airflow:8080` inside Docker;
+from your Mac it's `http://localhost:8085`.
+
+**Notebooks or DAGs can't import `kyuubi_lab` / `lab_runner`.** Both images
+put `client/` on `PYTHONPATH`. If you run a notebook from somewhere else,
+start it from the lab folder or `sys.path.insert(0, "client")`.
+
+### How this was checked before shipping
+
+All 15 DAGs were loaded by Airflow 3.3.2 with no import errors, and each
+was run end to end with `airflow dags test` against a fake Kyuubi REST server
+(same request validation as Kyuubi 1.12, per-batch states, kill support),
+a fake S3 and a fake Kafka. That covered the success paths, a failing job
+turning its dependents `upstream_failed`, Kafka-less skips, the run-any-job
+form with args and conf, and the always-on DAG starting three streams and
+killing all three at the end. Notebooks 00-12 were executed top to bottom
+with the same fakes; notebook 11 ran against a real local Airflow 3.3.2
+scheduler, triggering DAGs whose tasks then submitted to the fake Kyuubi.
+What the fakes can't prove is Spark's own behaviour: that part was tested
+earlier with PySpark 4.1.3 (see section 23), and `kyuubi_tests_all` is the
+quickest way to confirm it on your machine.

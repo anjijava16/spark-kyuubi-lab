@@ -28,8 +28,31 @@ Kafka is optional: `make kafka-install` adds a broker, topics and a UI
 (http://localhost:8090). Streaming jobs run always-on, for N seconds, or
 `--available-now`; `make produce` + `make stream-start` gives you a live demo.
 
+Airflow and Jupyter are optional too, and both go through Kyuubi rather
+than around it:
+
+```bash
+make airflow     # Airflow 3 on http://localhost:8085 (no login), 15 DAGs in airflow/dags
+make jupyter     # JupyterLab on http://localhost:8888 (no token), 13 notebooks in notebooks/
+```
+
+The DAGs cover every test group plus real pipelines: a daily lakehouse ELT
+(Hive ELT, ORC/Parquet/RCFILE, Postgres, Iceberg/Delta/Hudi, SQL checks), a
+Kafka streaming pipeline, always-on streams started and stopped by Airflow,
+an SQL-only reporting flow over Kyuubi JDBC, a file-event pipeline with a
+sensor, the order tracking project, and `kyuubi_run_any_job` to run any job
+with your own args. The notebooks walk through the REST API by hand, SQL
+over JDBC, formats, Postgres, the lakehouse formats, Kafka in and out, file
+streams, always-on streams, triggering DAGs, and an all-jobs run.
+
+```bash
+make airflow-run DAG=kyuubi_tests_all
+make airflow-run DAG=kyuubi_run_any_job CONF='{"job": "iceberg"}'
+```
+
 Every job's CLI command, REST payload and curl example is in
-**All_execution_payload.md** (and `.json`).
+**All_execution_payload.md** (and `.json`), along with how to trigger each
+DAG (make, Airflow CLI, Airflow REST, Python) and what each notebook runs.
 
 Jobs that use a table format are submitted with `--with iceberg`, `--with delta`,
 `--with delta,iceberg` or `--with hudi`.
@@ -45,6 +68,8 @@ Jobs that use a table format are submitted with `--with iceberg`, `--with delta`
 | Kyuubi REST | http://localhost:10099/api/v1/batches |
 | Kyuubi JDBC | jdbc:hive2://localhost:10009/default (Thrift, not a web page) |
 | Kafka (optional) | localhost:9094 from your Mac; UI http://localhost:8090 |
+| Airflow (optional) | http://localhost:8085 |
+| JupyterLab (optional) | http://localhost:8888 |
 
 Submit your own job:
 
