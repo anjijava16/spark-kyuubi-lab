@@ -1,0 +1,80 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Hive Metastore config. Spark never reads this file; Spark only needs
+  hive.metastore.uris (set in spark-defaults.conf). This file is for the
+  metastore service itself: where its database is, and how to reach the
+  warehouse bucket when it creates database/table directories.
+-->
+<configuration>
+
+  <!-- metastore database (Postgres) -->
+  <property>
+    <name>javax.jdo.option.ConnectionURL</name>
+    <value>jdbc:postgresql://postgres:5432/metastore</value>
+  </property>
+  <property>
+    <name>javax.jdo.option.ConnectionDriverName</name>
+    <value>org.postgresql.Driver</value>
+  </property>
+  <property>
+    <name>javax.jdo.option.ConnectionUserName</name>
+    <value>hive</value>
+  </property>
+  <property>
+    <name>javax.jdo.option.ConnectionPassword</name>
+    <value>hivepass</value>
+  </property>
+  <property>
+    <name>datanucleus.autoCreateSchema</name>
+    <value>false</value>
+  </property>
+  <property>
+    <name>hive.metastore.schema.verification</name>
+    <value>true</value>
+  </property>
+
+  <!-- where managed tables live by default -->
+  <property>
+    <name>hive.metastore.warehouse.dir</name>
+    <value>s3a://warehouse/</value>
+  </property>
+  <property>
+    <name>hive.metastore.port</name>
+    <value>9083</value>
+  </property>
+  <property>
+    <name>hive.metastore.event.db.notification.api.auth</name>
+    <value>false</value>
+  </property>
+
+  <!-- s3a access to RustFS -->
+  <property>
+    <name>fs.s3a.impl</name>
+    <value>org.apache.hadoop.fs.s3a.S3AFileSystem</value>
+  </property>
+  <property>
+    <name>fs.s3a.endpoint</name>
+    <value>http://rustfs:9000</value>
+  </property>
+  <property>
+    <name>fs.s3a.path.style.access</name>
+    <value>true</value>
+  </property>
+  <property>
+    <name>fs.s3a.connection.ssl.enabled</name>
+    <value>false</value>
+  </property>
+  <property>
+    <name>fs.s3a.access.key</name>
+    <value>rustfsadmin</value>
+  </property>
+  <property>
+    <name>fs.s3a.secret.key</name>
+    <value>rustfsadmin123</value>
+  </property>
+  <property>
+    <name>fs.s3a.aws.credentials.provider</name>
+    <value>org.apache.hadoop.fs.s3a.SimpleAWSCredentialsProvider</value>
+  </property>
+
+</configuration>

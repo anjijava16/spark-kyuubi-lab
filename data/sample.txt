@@ -1,0 +1,13 @@
+Kyuubi sits between the people who write Spark jobs and the cluster that runs them.
+A client sends a request, Kyuubi checks who is asking, and then Kyuubi starts the Spark driver.
+The driver asks the master for executors, the worker starts them, and the executors read data from storage.
+In this lab the storage is RustFS, which speaks the same API as Amazon S3.
+Spark reaches RustFS through the s3a connector, which ships in the hadoop-aws jar.
+The Hive Metastore keeps the table names, schemas and locations, while the data files stay in RustFS.
+Because the metastore is shared, a table written by a Python job can be read by a Scala job a minute later.
+When a job finishes, the event log lands in RustFS and the history server shows what happened.
+Batch jobs go through the REST port and SQL sessions go through the JDBC port.
+Both paths end the same way: Kyuubi runs spark-submit, and the cluster does the work.
+Spark jobs should never hard code the master, because the gateway decides where the job runs.
+Read the driver log first when a job fails, then the executor logs on the worker.
+Most failures in a setup like this come from three places: a wrong path, a missing jar, or a hostname nobody can resolve.

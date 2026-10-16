@@ -1,0 +1,20 @@
+# Submit with Kyuubi's own CLI, from inside the kyuubi container:
+#   docker compose cp client/batch-yaml kyuubi:/tmp/
+#   docker compose exec kyuubi bin/kyuubi-ctl submit batch \
+#       -f /tmp/batch-yaml/wordcount_py.yaml --hostUrl http://localhost:10099
+apiVersion: v1
+username: anji
+request:
+  batchType: SPARK
+  name: wordcount-py-ctl
+  resource: s3a://jobs/python/02_wordcount_s3.py
+  # Kyuubi requires className on every SPARK batch; for .py files
+  # spark-submit runs PythonRunner regardless, so say so explicitly.
+  className: org.apache.spark.deploy.PythonRunner
+  args:
+    - s3a://data/input/sample.txt
+    - s3a://data/output/wordcount_ctl
+  configs:
+    spark.executor.memory: 1g
+options:
+  verbose: true

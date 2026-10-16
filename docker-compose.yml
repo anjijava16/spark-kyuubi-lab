@@ -1,0 +1,321 @@
+# Spark 4 + Kyuubi + RustFS + Hive Metastore lab
+#
+#   docker compose up -d --build                      core stack
+#   docker compose --profile tools run --rm jar-builder   build Java/Scala jar
+#   docker compose run --rm storage-init                (re)upload jobs + data
+#   docker compose --profile tools run --rm kyuubi-client run all tests
+#
+# See Understand.md for the full walkthrough.
+
+name: spark-kyuubi-lab
+
+x-spark-build: &spark-build
+  context: ./docker
+  dockerfile: spark/Dockerfile
+  target: spark-base
+  args:
+    SPARK_IMAGE: ${SPARK_IMAGE:-apache/spark:4.1.3-scala2.13-java17-python3-ubuntu}
+    POSTGRES_JDBC_VERSION: ${POSTGRES_JDBC_VERSION:-42.7.4}
+
+x-spark-common: &spark-common
+  image: spark-kyuubi-lab/spark-base:${SPARK_VERSION:-4.1.3}
+  build: *spark-build
+  restart: unless-stopped
+  volumes:
+    - ./conf/spark/spark-defaults.conf:/opt/spark/conf/spark-defaults.conf:ro
+    # Delta / Iceberg / Hudi jars, filled by lakehouse-init. Executors on
+    # the worker load them from here when a job asks for that format.
+    - lakehouse-jars:/opt/lakehouse:ro
+  networks: [lab]
+
+services:
+
+  # ------------------------------------------------------------------
+  # Storage: RustFS, S3-compatible.
+  #   inside Docker: http://rustfs:9000
+  #   on your Mac:   API http://localhost:9100, console http://localhost:9101
+  # ------------------------------------------------------------------
+
+  # RustFS runs as uid 10001; make the named volumes writable for it.
+  rustfs-perms:
+    image: busybox:1.37
+    command: ["sh", "-c", "chown -R 10001:10001 /data /logs"]
+    volumes:
+      - rustfs-data:/data
+      - rustfs-logs:/logs
+    restart: "no"
+    networks: [lab]
+
+  rustfs:
+    image: ${RUSTFS_IMAGE:-rustfs/rustfs:1.0.1}
+    hostname: rustfs
+    environment:
+      RUSTFS_VOLUMES: /data
+      RUSTFS_ADDRESS: 0.0.0.0:9000
+      RUSTFS_CONSOLE_ADDRESS: 0.0.0.0:9001
+      RUSTFS_CONSOLE_ENABLE: "true"
+      RUSTFS_ACCESS_KEY: ${RUSTFS_ACCESS_KEY:-rustfsadmin}
+      RUSTFS_SECRET_KEY: ${RUSTFS_SECRET_KEY:-rustfsadmin123}
+    ports:
+      - "${RUSTFS_API_PORT:-9100}:9000"
+      - "${RUSTFS_CONSOLE_PORT:-9101}:9001"
+    volumes:
+      - rustfs-data:/data
+      - rustfs-logs:/logs
+    depends_on:
+      rustfs-perms:
+        condition: service_completed_successfully
+    restart: unless-stopped
+    networks: [lab]
+
+  # One-shot: wait for RustFS, create buckets, upload ./jobs and ./data.
+  # Re-run any time with:  docker compose run --rm storage-init   (make upload)
+  storage-init:
+    image: ${AWS_CLI_IMAGE:-amazon/aws-cli:2.37.12}
+    depends_on:
+      rustfs:
+        condition: service_started
+    environment:
+      S3_ENDPOINT: http://rustfs:9000
+      RUSTFS_ACCESS_KEY: ${RUSTFS_ACCESS_KEY:-rustfsadmin}
+      RUSTFS_SECRET_KEY: ${RUSTFS_SECRET_KEY:-rustfsadmin123}
+    volumes:
+      - ./docker/storage-init/init-buckets.sh:/scripts/init-buckets.sh:ro
+      - ./jobs:/seed/jobs:ro
+      - ./data:/seed/data:ro
+    entrypoint: ["bash", "/scripts/init-buckets.sh"]
+    restart: "no"
+    networks: [lab]
+
+  # ------------------------------------------------------------------
+  # Catalog: Hive Metastore (thrift 9083) on Postgres
+  # ------------------------------------------------------------------
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-metastore}
+      POSTGRES_USER: ${POSTGRES_USER:-hive}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-hivepass}
+    ports:
+      - "15432:5432"      # 15432 on the host so it won't clash with a local Postgres
+    volumes:
+      - pg-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-hive} -d ${POSTGRES_DB:-metastore}"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+    restart: unless-stopped
+    networks: [lab]
+
+  # One-shot: create the "shop" application database (separate from the
+  # metastore DB) and seed the customers table. Idempotent, so it is safe
+  # on an existing pg-data volume. Re-run: docker compose run --rm pg-init
+  pg-init:
+    image: postgres:16-alpine
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      PGHOST: postgres
+      PGUSER: ${POSTGRES_USER:-hive}
+      PGPASSWORD: ${POSTGRES_PASSWORD:-hivepass}
+      PGDATABASE: ${POSTGRES_DB:-metastore}
+    volumes:
+      - ./docker/postgres:/sql:ro
+    entrypoint: ["sh", "/sql/init-shop.sh"]
+    restart: "no"
+    networks: [lab]
+
+  # One-shot: download Delta Lake, Iceberg and Hudi jars that match this
+  # Spark version into the lakehouse-jars volume. Nothing is baked into
+  # images, so changing a version in .env only needs a re-run of this.
+  # Re-run: docker compose run --rm lakehouse-init
+  lakehouse-init:
+    image: maven:3.9-eclipse-temurin-17
+    environment:
+      SPARK_VERSION: ${SPARK_VERSION:-4.1.3}
+      DELTA_VERSION: ${DELTA_VERSION:-4.4.0}
+      ICEBERG_VERSION: ${ICEBERG_VERSION:-1.12.0}
+      HUDI_VERSION: ${HUDI_VERSION:-1.2.0}
+    volumes:
+      - ./docker/lakehouse/fetch-lakehouse-jars.sh:/fetch.sh:ro
+      - lakehouse-jars:/opt/lakehouse
+      - m2-cache:/root/.m2
+    entrypoint: ["bash", "/fetch.sh"]
+    restart: "no"
+    networks: [lab]
+
+  hive-metastore:
+    image: spark-kyuubi-lab/hive-metastore:local
+    build:
+      context: ./docker
+      dockerfile: hive-metastore/Dockerfile
+      args:
+        HIVE_IMAGE: ${HIVE_IMAGE:-apache/hive:3.1.3}
+        POSTGRES_JDBC_VERSION: ${POSTGRES_JDBC_VERSION:-42.7.4}
+    # The apache/hive images are amd64 only; Apple Silicon runs this under emulation.
+    platform: linux/amd64
+    environment:
+      DB_TYPE: postgres
+    volumes:
+      - ./conf/hive/hive-site.xml:/opt/hive/conf/hive-site.xml:ro
+    ports:
+      - "9083:9083"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      storage-init:
+        condition: service_completed_successfully
+    healthcheck:
+      test: ["CMD-SHELL", "bash -c '</dev/tcp/localhost/9083' || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 30
+      start_period: 40s
+    restart: unless-stopped
+    networks: [lab]
+
+  # ------------------------------------------------------------------
+  # Compute: Spark standalone master + worker + history server
+  # ------------------------------------------------------------------
+  spark-master:
+    <<: *spark-common
+    hostname: spark-master
+    command: >
+      /opt/spark/bin/spark-class org.apache.spark.deploy.master.Master
+      --host spark-master --port 7077 --webui-port 8080
+    ports:
+      - "8080:8080"
+      - "7077:7077"
+    healthcheck:
+      # The master binds to its hostname (--host spark-master), not to
+      # localhost, so probe that address.
+      test: ["CMD-SHELL", "bash -c '</dev/tcp/spark-master/7077' || exit 1"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  spark-worker:
+    <<: *spark-common
+    command: >
+      /opt/spark/bin/spark-class org.apache.spark.deploy.worker.Worker
+      spark://spark-master:7077 --webui-port 8081
+    environment:
+      SPARK_WORKER_CORES: ${SPARK_WORKER_CORES:-4}
+      SPARK_WORKER_MEMORY: ${SPARK_WORKER_MEMORY:-4g}
+    ports:
+      - "8081-8083:8081"   # range so `--scale spark-worker=3` still works
+    depends_on:
+      spark-master:
+        condition: service_healthy
+
+  spark-history:
+    <<: *spark-common
+    command: /opt/spark/bin/spark-class org.apache.spark.deploy.history.HistoryServer
+    ports:
+      - "18080:18080"
+    depends_on:
+      storage-init:
+        condition: service_completed_successfully
+
+  # ------------------------------------------------------------------
+  # Gateway: Kyuubi (JDBC 10009, REST 10099)
+  # Drivers for batch jobs and the SQL engine run INSIDE this container.
+  # ------------------------------------------------------------------
+  kyuubi:
+    image: spark-kyuubi-lab/kyuubi:${KYUUBI_VERSION:-1.12.0}
+    build:
+      context: ./docker
+      dockerfile: spark/Dockerfile
+      target: kyuubi
+      args:
+        SPARK_IMAGE: ${SPARK_IMAGE:-apache/spark:4.1.3-scala2.13-java17-python3-ubuntu}
+        POSTGRES_JDBC_VERSION: ${POSTGRES_JDBC_VERSION:-42.7.4}
+        KYUUBI_VERSION: ${KYUUBI_VERSION:-1.12.0}
+    hostname: kyuubi
+    environment:
+      SPARK_HOME: /opt/spark
+      KYUUBI_JAVA_OPTS: "-Xmx1g"
+      # spark-submit's fallback master. Kept out of every conf file Kyuubi
+      # reads, so Kyuubi tracks batches as local processes (jps) and can
+      # report FINISHED/ERROR. See conf/kyuubi/kyuubi-defaults.conf.
+      MASTER: spark://spark-master:7077
+    volumes:
+      - ./conf/spark/spark-defaults.conf:/opt/spark/conf/spark-defaults.conf:ro
+      - ./conf/kyuubi/kyuubi-defaults.conf:/opt/kyuubi/conf/kyuubi-defaults.conf:ro
+      - lakehouse-jars:/opt/lakehouse:ro
+    ports:
+      - "10009:10009"
+      - "10099:10099"
+      - "4040-4045:4040-4045"   # driver UIs of jobs running right now
+    depends_on:
+      spark-master:
+        condition: service_healthy
+      hive-metastore:
+        condition: service_healthy
+      storage-init:
+        condition: service_completed_successfully
+      pg-init:
+        condition: service_completed_successfully
+      # Delta/Iceberg/Hudi jars. If this fails (a bad version in .env),
+      # Kyuubi still starts; only the lakehouse jobs will fail.
+      lakehouse-init:
+        condition: service_completed_successfully
+        required: false
+    healthcheck:
+      test: ["CMD-SHELL", "bash -c '</dev/tcp/localhost/10099' || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 30
+      start_period: 30s
+    restart: unless-stopped
+    networks: [lab]
+
+  # ------------------------------------------------------------------
+  # Tools (profile "tools", only run on demand)
+  # ------------------------------------------------------------------
+
+  # Builds jobs/jvm (Java + Scala) into jobs/jars/spark-kyuubi-jobs.jar
+  jar-builder:
+    image: maven:3.9-eclipse-temurin-17
+    profiles: ["tools"]
+    working_dir: /build
+    volumes:
+      - ./jobs/jvm:/build
+      - ./jobs/jars:/out
+      - m2-cache:/root/.m2
+    command:
+      - bash
+      - -c
+      - mvn -B -q -Dspark.version=${SPARK_VERSION:-4.1.3} clean package && cp target/spark-kyuubi-jobs.jar /out/ && ls -l /out
+    networks: [lab]
+
+  # Python client that talks to Kyuubi REST. Default command runs the test suite.
+  kyuubi-client:
+    image: python:3.12-slim
+    profiles: ["tools"]
+    working_dir: /work
+    environment:
+      KYUUBI_REST_URL: http://kyuubi:10099
+      SPARK_VERSION: ${SPARK_VERSION:-4.1.3}
+    volumes:
+      - ./client:/work/client:ro
+      - ./jobs:/work/jobs:ro
+    entrypoint: ["sh", "/work/client/entry.sh"]
+    command: ["python", "client/run_tests.py"]
+    depends_on:
+      kyuubi:
+        condition: service_healthy
+    networks: [lab]
+
+volumes:
+  rustfs-data:
+  rustfs-logs:
+  pg-data:
+  m2-cache:
+  lakehouse-jars:
+
+networks:
+  lab:
+    name: spark-kyuubi-lab

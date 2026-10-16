@@ -1,0 +1,12 @@
+apiVersion: v1
+username: anji
+request:
+  batchType: SPARK
+  name: sales-report-scala-ctl
+  resource: s3a://jobs/jars/spark-kyuubi-jobs.jar
+  className: com.example.ScalaSalesReport
+  args: []
+  configs:
+    spark.executor.memory: 1g
+options:
+  verbose: true

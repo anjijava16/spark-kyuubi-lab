@@ -1,0 +1,1190 @@
+((.venv) ) (base) welcome@jaisairams-Laptop spark-kyuubi-lab_2 % make down
+docker compose down
+[+] Running 10/10
+ ✔ Container spark-kyuubi-lab-kyuubi-1          Removed                                                                                                              0.0s 
+ ✔ Container spark-kyuubi-lab-spark-worker-1    Removed                                                                                                              0.0s 
+ ✔ Container spark-kyuubi-lab-spark-history-1   Removed                                                                                                              0.3s 
+ ✔ Container spark-kyuubi-lab-hive-metastore-1  Removed                                                                                                              0.6s 
+ ✔ Container spark-kyuubi-lab-spark-master-1    Removed                                                                                                              0.7s 
+ ✔ Container spark-kyuubi-lab-storage-init-1    Removed                                                                                                              0.0s 
+ ✔ Container spark-kyuubi-lab-postgres-1        Removed                                                                                                              0.3s 
+ ✔ Container spark-kyuubi-lab-rustfs-1          Removed                                                                                                              0.2s 
+ ✔ Container spark-kyuubi-lab-rustfs-perms-1    Removed                                                                                                              0.0s 
+ ✔ Network spark-kyuubi-lab                     Removed                                                                                                              0.1s 
+((.venv) ) (base) welcome@jaisairams-Laptop spark-kyuubi-lab_2 % cd ..
+((.venv) ) (base) welcome@jaisairams-Laptop multiagent_project % ls -ltr
+total 1712
+-rw-------@  1 welcome  staff   37868 Sep  4 15:13 README.md
+-rw-------@  1 welcome  staff  148481 Sep  4 15:13 project.zip
+drwxr-xr-x  18 welcome  staff     576 Sep  5 23:51 agent-governor
+drwxr-xr-x@ 28 welcome  staff     896 Sep  7 07:27 production-ai-app
+drwxr-xr-x@ 35 welcome  staff    1120 Sep  9 10:43 reliable-agentic-lab
+drwxr-xr-x  22 welcome  staff     704 Sep  9 14:59 Langchain_deepagents_applications
+-rw-r--r--@  1 welcome  staff  683099 Sep 10 21:04 sca-workshop-code(1).zip
+drwx------@ 15 welcome  staff     480 Sep 10 21:05 sca-workshop-code
+drwxr-xr-x@ 34 welcome  staff    1088 Sep 13 19:56 agentmesh
+drwxr-xr-x   9 welcome  staff     288 Sep 16 21:17 Google-CX-Agent-Studio
+drwxr-xr-x  35 welcome  staff    1120 Sep 20 11:47 building-a-coding-agent-from-scratch-course
+drwxr-xr-x  27 welcome  staff     864 Sep 22 21:34 terraform-aws-transfer-family
+drwxr-xr-x   3 welcome  staff      96 Sep 27 21:05 conference
+drwxr-xr-x@ 21 welcome  staff     672 Sep 30 23:49 substack-brain-course
+drwxr-xr-x@  5 welcome  staff     160 Oct  2 12:45 agent_goverance
+drwxr-xr-x  30 welcome  staff     960 Oct  2 15:54 AgentHarness-claude-sdk
+drwxr-xr-x@ 17 welcome  staff     544 Oct  7 08:37 aws_voice_agents
+drwxr-xr-x   3 welcome  staff      96 Oct  7 12:04 databrcks_genai
+drwxr-xr-x  13 welcome  staff     416 Oct  7 23:26 slack_repo
+drwxr-xr-x   9 welcome  staff     288 Oct  8 14:45 jav_projects
+drwxr-xr-x   3 welcome  staff      96 Oct  9 17:05 mlflow_deepdive
+drwxr-xr-x@ 23 welcome  staff     736 Oct 10 23:21 temporal_runtime
+drwxr-xr-x   3 welcome  staff      96 Oct 11 09:58 slack_ws
+drwxr-xr-x   4 welcome  staff     128 Oct 12 10:31 ci_cd
+drwxr-xr-x  51 welcome  staff    1632 Oct 15 20:40 kyuubi
+drwxr-xr-x@ 12 welcome  staff     384 Oct 15 22:19 spark-kyuubi-lab
+((.venv) ) (base) welcome@jaisairams-Laptop multiagent_project % cd spark-kyuubi-lab 
+((.venv) ) (base) welcome@jaisairams-Laptop spark-kyuubi-lab % ls -ltr
+total 128
+drwxr-xr-x@ 5 welcome  staff    160 Oct 15 21:10 conf
+drwxr-xr-x@ 5 welcome  staff    160 Oct 15 21:12 jobs
+-rw-r--r--@ 1 welcome  staff    898 Oct 15 22:00 Makefile
+drwxr-xr-x@ 4 welcome  staff    128 Oct 15 22:00 data
+drwxr-xr-x@ 6 welcome  staff    192 Oct 15 22:01 docker
+-rw-r--r--@ 1 welcome  staff   1355 Oct 15 22:02 README.md
+-rw-r--r--@ 1 welcome  staff  44020 Oct 15 22:11 Understand.md
+drwxr-xr-x@ 7 welcome  staff    224 Oct 15 22:11 client
+-rw-r--r--@ 1 welcome  staff   8561 Oct 15 22:19 docker-compose.yml
+((.venv) ) (base) welcome@jaisairams-Laptop spark-kyuubi-lab % make up
+docker compose up -d --build
+[+] Building 2.4s (57/69)                                                                                                                            docker:desktop-linux
+ => [spark-history internal] load build definition from Dockerfile                                                                                                   0.0s
+ => => transferring dockerfile: 2.96kB                                                                                                                               0.0s
+ => [spark-history internal] load .dockerignore                                                                                                                      0.0s
+ => => transferring context: 2B                                                                                                                                      0.0s
+ => [hive-metastore internal] load build definition from Dockerfile                                                                                                  0.0s
+ => => transferring dockerfile: 1.40kB                                                                                                                               0.0s
+ => [hive-metastore internal] load .dockerignore                                                                                                                     0.0s
+ => => transferring context: 2B                                                                                                                                      0.0s
+ => [spark-worker] resolve image config for docker.io/docker/dockerfile:1.6                                                                                          0.8s
+ => [spark-master internal] load .dockerignore                                                                                                                       0.0s
+ => => transferring context: 2B                                                                                                                                      0.0s
+ => [spark-master internal] load build definition from Dockerfile                                                                                                    0.0s
+ => => transferring dockerfile: 2.96kB                                                                                                                               0.0s
+ => [spark-history auth] docker/dockerfile:pull token for registry-1.docker.io                                                                                       0.0s
+ => CACHED [kyuubi] docker-image://docker.io/docker/dockerfile:1.6@sha256:ac85f380a63b13dfcefa89046420e1781752bab202122f8f50032edf31be0021                           0.0s
+ => [hive-metastore internal] load metadata for docker.io/apache/hive:3.1.3                                                                                          0.5s
+ => [hive-metastore internal] load metadata for docker.io/library/alpine:3.20                                                                                        0.9s
+ => [spark-worker internal] load metadata for docker.io/library/alpine:3.20                                                                                          1.1s
+ => [spark-worker internal] load metadata for docker.io/apache/spark:4.1.3-scala2.13-java17-python3-ubuntu                                                           0.6s
+ => [spark-history auth] apache/spark:pull token for registry-1.docker.io                                                                                            0.0s
+ => [hive-metastore auth] library/alpine:pull token for registry-1.docker.io                                                                                         0.0s
+ => [hive-metastore auth] apache/hive:pull token for registry-1.docker.io                                                                                            0.0s
+ => [spark-worker fetch-kyuubi 1/3] FROM docker.io/library/alpine:3.20@sha256:d9e853e87e55526f6b2917df91a2115c36dd7c696a35be12163d44e6e2a4b6bc                       0.0s
+ => [spark-history internal] load build context                                                                                                                      0.0s
+ => => transferring context: 238B                                                                                                                                    0.0s
+ => [spark-worker spark-dist 1/1] FROM docker.io/apache/spark:4.1.3-scala2.13-java17-python3-ubuntu@sha256:9b0a6c2c860f5e7d18dd5270286fef32a09c7f5a7e2b0dbe5642de8a  0.0s
+ => [spark-master internal] load build context                                                                                                                       0.0s
+ => => transferring context: 238B                                                                                                                                    0.0s
+ => [hive-metastore hive-dist 1/1] FROM docker.io/apache/hive:3.1.3@sha256:d102ba29ad07e93c303894896203a80b903c0001d80221f1cb9fea92dcac06e4                          0.0s
+ => [hive-metastore fetch 1/5] FROM docker.io/library/alpine:3.20@sha256:d9e853e87e55526f6b2917df91a2115c36dd7c696a35be12163d44e6e2a4b6bc                            0.0s
+ => [hive-metastore internal] load build context                                                                                                                     0.0s
+ => => transferring context: 1.20kB                                                                                                                                  0.0s
+ => CACHED [kyuubi fetch-s3a 2/5] RUN apk add --no-cache curl                                                                                                        0.0s
+ => CACHED [spark-history fetch-s3a 3/5] COPY common/fetch-s3a-jars.sh /usr/local/bin/fetch-s3a-jars.sh                                                              0.0s
+ => CACHED [spark-history fetch-s3a 4/5] COPY --from=spark-dist /opt/spark/jars/ /spark-jars/                                                                        0.0s
+ => CACHED [spark-history fetch-s3a 5/5] RUN HADOOP_VERSION="" AWS_SDK_VERSION=""     sh /usr/local/bin/fetch-s3a-jars.sh /spark-jars /out                           0.0s
+ => CACHED [spark-history spark-base 1/3] COPY --from=fetch-s3a /out/ /opt/spark/jars/                                                                               0.0s
+ => CACHED [spark-history spark-base 2/3] RUN mkdir -p /opt/spark/work /opt/spark/logs  && chown -R spark:spark /opt/spark/work /opt/spark/logs                      0.0s
+ => CACHED [spark-history spark-base 3/3] WORKDIR /opt/spark                                                                                                         0.0s
+ => CACHED [hive-metastore fetch 2/5] RUN apk add --no-cache curl                                                                                                    0.0s
+ => CACHED [hive-metastore fetch 3/5] COPY common/fetch-s3a-jars.sh /usr/local/bin/fetch-s3a-jars.sh                                                                 0.0s
+ => CACHED [hive-metastore fetch 4/5] COPY --from=hive-dist /opt/hadoop/share/hadoop/common/ /hadoop-common/                                                         0.0s
+ => CACHED [hive-metastore fetch 5/5] RUN set -eux;     HADOOP_VERSION="" AWS_SDK_VERSION=""       sh /usr/local/bin/fetch-s3a-jars.sh /hadoop-common /out;     cur  0.0s
+ => CACHED [hive-metastore stage-2 1/2] COPY --from=fetch /out/ /opt/hive/lib/                                                                                       0.0s
+ => [hive-metastore stage-2 2/2] COPY --chmod=755 hive-metastore/start-metastore.sh /opt/start-metastore.sh                                                          0.0s
+ => [spark-master] exporting to image                                                                                                                                0.0s
+ => => exporting layers                                                                                                                                              0.0s
+ => => writing image sha256:df62dec732c02229205fafb35f8604a0c60a84d290b034a4606c8945d59b3a66                                                                         0.0s
+ => => naming to docker.io/spark-kyuubi-lab/spark-base:4.1.3                                                                                                         0.0s
+ => [spark-history] exporting to image                                                                                                                               0.0s
+ => => exporting layers                                                                                                                                              0.0s
+ => => writing image sha256:80947fe67b822ce7e091692dde78bfaad564d3298cf1efad8bce070761369b04                                                                         0.0s
+ => => naming to docker.io/spark-kyuubi-lab/spark-base:4.1.3                                                                                                         0.0s
+ => [hive-metastore] exporting to image                                                                                                                              0.1s
+ => => exporting layers                                                                                                                                              0.0s
+ => => writing image sha256:003bc41b6a153afaa91b92957c095be2881db9cb0d298eb2e4b5f4e639fc2b61                                                                         0.0s
+ => => naming to docker.io/spark-kyuubi-lab/hive-metastore:local                                                                                                     0.0s
+ => [spark-worker internal] load build definition from Dockerfile                                                                                                    0.0s
+ => => transferring dockerfile: 2.96kB                                                                                                                               0.0s
+ => [spark-worker internal] load .dockerignore                                                                                                                       0.0s
+ => => transferring context: 2B                                                                                                                                      0.0s
+ => [kyuubi internal] load build definition from Dockerfile                                                                                                          0.0s
+ => => transferring dockerfile: 2.96kB                                                                                                                               0.0s
+ => [kyuubi internal] load .dockerignore                                                                                                                             0.0s
+ => => transferring context: 2B                                                                                                                                      0.0s
+ => [kyuubi internal] load build context                                                                                                                             0.0s
+ => => transferring context: 238B                                                                                                                                    0.0s
+ => [spark-worker internal] load build context                                                                                                                       0.0s
+ => => transferring context: 238B                                                                                                                                    0.0s
+ => CACHED [kyuubi fetch-s3a 3/5] COPY common/fetch-s3a-jars.sh /usr/local/bin/fetch-s3a-jars.sh                                                                     0.0s
+ => CACHED [kyuubi fetch-s3a 4/5] COPY --from=spark-dist /opt/spark/jars/ /spark-jars/                                                                               0.0s
+ => CACHED [kyuubi fetch-s3a 5/5] RUN HADOOP_VERSION="" AWS_SDK_VERSION=""     sh /usr/local/bin/fetch-s3a-jars.sh /spark-jars /out                                  0.0s
+ => CACHED [kyuubi spark-base 1/3] COPY --from=fetch-s3a /out/ /opt/spark/jars/                                                                                      0.0s
+ => CACHED [kyuubi spark-base 2/3] RUN mkdir -p /opt/spark/work /opt/spark/logs  && chown -R spark:spark /opt/spark/work /opt/spark/logs                             0.0s
+ => CACHED [kyuubi spark-base 3/3] WORKDIR /opt/spark                                                                                                                0.0s
+ => CACHED [kyuubi fetch-kyuubi 2/3] RUN apk add --no-cache curl tar                                                                                                 0.0s
+ => CACHED [kyuubi fetch-kyuubi 3/3] RUN set -eux;     TGZ="apache-kyuubi-1.12.0-bin.tgz";     curl -fsSL -o /tmp/kyuubi.tgz "https://dlcdn.apache.org/kyuubi/kyuub  0.0s
+ => CACHED [kyuubi kyuubi 1/2] COPY --from=fetch-kyuubi --chown=spark:spark /opt/kyuubi /opt/kyuubi                                                                  0.0s
+ => CACHED [kyuubi kyuubi 2/2] WORKDIR /opt/kyuubi                                                                                                                   0.0s
+ => [spark-worker] exporting to image                                                                                                                                0.0s
+ => => exporting layers                                                                                                                                              0.0s
+ => => writing image sha256:fa06abcd428b3f01be1826f58a8c00e864aa800589e1373ebb0272c0851cba2e                                                                         0.0s
+ => => naming to docker.io/spark-kyuubi-lab/spark-base:4.1.3                                                                                                         0.0s
+ => [kyuubi] exporting to image                                                                                                                                      0.0s
+ => => exporting layers                                                                                                                                              0.0s
+ => => writing image sha256:e97a96f98492ce0e311ab951f2a8cc574e1413c74839b3cbcb82ac369eebebb7                                                                         0.0s
+ => => naming to docker.io/spark-kyuubi-lab/kyuubi:1.12.0                                                                                                            0.0s
+[+] Running 10/10
+ ✔ Network spark-kyuubi-lab                     Created                                                                                                              0.0s 
+ ✔ Container spark-kyuubi-lab-rustfs-perms-1    Exited                                                                                                               0.0s 
+ ✔ Container spark-kyuubi-lab-postgres-1        Healthy                                                                                                              0.1s 
+ ✔ Container spark-kyuubi-lab-spark-master-1    Healthy                                                                                                              0.0s 
+ ✔ Container spark-kyuubi-lab-rustfs-1          Started                                                                                                              0.0s 
+ ✔ Container spark-kyuubi-lab-spark-worker-1    Started                                                                                                              0.0s 
+ ✔ Container spark-kyuubi-lab-storage-init-1    Exited                                                                                                               0.0s 
+ ✔ Container spark-kyuubi-lab-hive-metastore-1  Healthy                                                                                                              0.0s 
+ ✔ Container spark-kyuubi-lab-spark-history-1   Started                                                                                                              0.0s 
+ ✔ Container spark-kyuubi-lab-kyuubi-1          Started                                                                                                              0.0s 
+docker compose ps
+NAME                                IMAGE                                   COMMAND                  SERVICE          CREATED          STATUS                                     PORTS
+spark-kyuubi-lab-hive-metastore-1   spark-kyuubi-lab/hive-metastore:local   "/opt/start-metastor…"   hive-metastore   31 seconds ago   Up 20 seconds (healthy)                    10000/tcp, 0.0.0.0:9083->9083/tcp, 10002/tcp
+spark-kyuubi-lab-kyuubi-1           spark-kyuubi-lab/kyuubi:1.12.0          "/opt/entrypoint.sh …"   kyuubi           31 seconds ago   Up Less than a second (health: starting)   0.0.0.0:4040-4045->4040-4045/tcp, 0.0.0.0:10009->10009/tcp, 0.0.0.0:10099->10099/tcp
+spark-kyuubi-lab-postgres-1         postgres:16-alpine                      "docker-entrypoint.s…"   postgres         31 seconds ago   Up 30 seconds (healthy)                    0.0.0.0:15432->5432/tcp
+spark-kyuubi-lab-rustfs-1           rustfs/rustfs:1.0.1                     "/entrypoint.sh rust…"   rustfs           31 seconds ago   Up 29 seconds                              0.0.0.0:9100->9000/tcp, 0.0.0.0:9101->9001/tcp
+spark-kyuubi-lab-spark-history-1    spark-kyuubi-lab/spark-base:4.1.3       "/opt/entrypoint.sh …"   spark-history    31 seconds ago   Up 20 seconds                              0.0.0.0:18080->18080/tcp
+spark-kyuubi-lab-spark-master-1     spark-kyuubi-lab/spark-base:4.1.3       "/opt/entrypoint.sh …"   spark-master     31 seconds ago   Up 30 seconds (healthy)                    0.0.0.0:7077->7077/tcp, 0.0.0.0:8080->8080/tcp
+spark-kyuubi-lab-spark-worker-1     spark-kyuubi-lab/spark-base:4.1.3       "/opt/entrypoint.sh …"   spark-worker     31 seconds ago   Up 24 seconds                              0.0.0.0:8081->8081/tcp
+((.venv) ) (base) welcome@jaisairams-Laptop spark-kyuubi-lab % code .
+((.venv) ) (base) welcome@jaisairams-Laptop spark-kyuubi-lab % 
+((.venv) ) (base) welcome@jaisairams-Laptop spark-kyuubi-lab % 
+((.venv) ) (base) welcome@jaisairams-Laptop spark-kyuubi-lab % python client/kyuubi_submit.py --url http://localhost:10099 \
+  submit s3a://jobs/python/02_wordcount_s3.py --remote \
+  -- s3a://data/input/sample.txt s3a://data/output/wc
+usage: kyuubi_submit.py [-h] [--url URL] [--user USER] [--password PASSWORD] {submit,status,log,kill,list} ...
+kyuubi_submit.py: error: unrecognized arguments: -- s3a://data/input/sample.txt s3a://data/output/wc
+((.venv) ) (base) welcome@jaisairams-Laptop spark-kyuubi-lab % ls -ltr client/kyuubi_submit.py 
+-rw-------@ 1 welcome  staff  9509 Oct 15 22:10 client/kyuubi_submit.py
+((.venv) ) (base) welcome@jaisairams-Laptop spark-kyuubi-lab % clerar
+zsh: command not found: clerar
+((.venv) ) (base) welcome@jaisairams-Laptop spark-kyuubi-lab % vi kyuubi_submit.py
+((.venv) ) (base) welcome@jaisairams-Laptop spark-kyuubi-lab % python client/kyuubi_submit.py --url http://localhost:10099 \
+  submit s3a://jobs/python/02_wordcount_s3.py --remote \
+  -- s3a://data/input/sample.txt s3a://data/output/wc
+usage: kyuubi_submit.py [-h] [--url URL] [--user USER] [--password PASSWORD] {submit,status,log,kill,list} ...
+kyuubi_submit.py: error: unrecognized arguments: -- s3a://data/input/sample.txt s3a://data/output/wc
+((.venv) ) (base) welcome@jaisairams-Laptop spark-kyuubi-lab % python kyuubi_submit.py --url http://localhost:10099 \ 
+  submit s3a://jobs/python/02_wordcount_s3.py --remote \
+  -- s3a://data/input/sample.txt s3a://data/output/wc
+Submitted batch 9de9a7be-1d20-47e9-9c37-4771b1008c9a (state=PENDING)
+2026-10-16 02:27:01.372 INFO KyuubiRestFrontendService-77 org.apache.kyuubi.operation.OperationAuditLogger: operation=589ca0e8-e694-48aa-a212-fa77e99c6360	opType=BatchJobSubmission	state=PENDING	user=anonymous	session=9de9a7be-1d20-47e9-9c37-4771b1008c9a
+2026-10-16 02:27:01.381 INFO KyuubiSessionManager-exec-pool: Thread-85 org.apache.kyuubi.engine.ProcBuilder: Logging to /opt/kyuubi/work/anonymous/kyuubi-spark-batch-submit.log.0
+2026-10-16 02:27:01.383 INFO KyuubiSessionManager-exec-pool: Thread-85 org.apache.kyuubi.operation.BatchJobSubmission: Submitting SPARK batch[9de9a7be-1d20-47e9-9c37-4771b1008c9a] job:
+/opt/spark/bin/spark-submit \
+	--class org.apache.spark.deploy.PythonRunner \
+	--conf spark.kyuubi.batch.id=9de9a7be-1d20-47e9-9c37-4771b1008c9a \
+	--conf spark.kyuubi.batch.resource.uploaded=false \
+	--conf spark.kyuubi.client.ipAddress=192.168.65.1 \
+	--conf spark.kyuubi.engine.engineLog.path=/opt/kyuubi/work/anonymous/kyuubi-spark-batch-submit.log.0 \
+	--conf spark.kyuubi.server.ipAddress=0.0.0.0 \
+	--conf spark.kyuubi.session.connection.url=0.0.0.0:10099 \
+	--conf spark.kyuubi.session.real.user=anonymous \
+	--conf spark.app.name=02_wordcount_s3 \
+	--conf spark.driver.bindAddress=0.0.0.0 \
+	--conf spark.driver.host=kyuubi \
+	--conf spark.kubernetes.driver.label.kyuubi-unique-tag=9de9a7be-1d20-47e9-9c37-4771b1008c9a \
+	--conf spark.master=spark://spark-master:7077 \
+	--conf spark.submit.deployMode=client \
+	--conf spark.yarn.tags=KYUUBI,9de9a7be-1d20-47e9-9c37-4771b1008c9a \
+	--proxy-user anonymous s3a://jobs/python/02_wordcount_s3.py s3a://data/input/sample.txt s3a://data/output/wc
+WARNING: Using incubator modules: jdk.incubator.vector
+26/10/16 02:27:03 WARN NativeCodeLoader: Unable to load native-hadoop library for your platform... using builtin-java classes where applicable
+SLF4J: Failed to load class "org.slf4j.impl.StaticLoggerBinder".
+SLF4J: Defaulting to no-operation (NOP) logger implementation
+SLF4J: See http://www.slf4j.org/codes.html#StaticLoggerBinder for further details.
+Using Spark's default log4j profile: org/apache/spark/log4j2-defaults.properties
+26/10/16 02:27:04 INFO SparkContext: Running Spark version 4.1.3
+26/10/16 02:27:04 INFO SparkContext: OS info Linux, 6.5.11-linuxkit, aarch64
+26/10/16 02:27:04 INFO SparkContext: Java version 17.0.19+10
+26/10/16 02:27:04 INFO ResourceUtils: ==============================================================
+26/10/16 02:27:04 INFO ResourceUtils: No custom resources configured for spark.driver.
+26/10/16 02:27:04 INFO ResourceUtils: ==============================================================
+26/10/16 02:27:04 INFO SparkContext: Submitted application: 02-wordcount-s3
+26/10/16 02:27:04 INFO SecurityManager: Changing view acls to: spark,anonymous
+26/10/16 02:27:04 INFO SecurityManager: Changing modify acls to: spark,anonymous
+26/10/16 02:27:04 INFO SecurityManager: Changing view acls groups to: spark,anonymous
+26/10/16 02:27:04 INFO SecurityManager: Changing modify acls groups to: spark,anonymous
+26/10/16 02:27:04 INFO SecurityManager: SecurityManager: authentication disabled; ui acls disabled; users with view permissions: spark, anonymous groups with view permissions: EMPTY; users with modify permissions: spark, anonymous; groups with modify permissions: EMPTY; RPC SSL disabled
+26/10/16 02:27:04 INFO Utils: Successfully started service 'sparkDriver' on port 39925.
+26/10/16 02:27:04 INFO SparkEnv: Registering MapOutputTracker
+26/10/16 02:27:04 INFO SparkEnv: Registering BlockManagerMaster
+26/10/16 02:27:04 INFO BlockManagerMasterEndpoint: Using org.apache.spark.storage.DefaultTopologyMapper for getting topology information
+26/10/16 02:27:04 INFO BlockManagerMasterEndpoint: BlockManagerMasterEndpoint up
+26/10/16 02:27:04 INFO SparkEnv: Registering BlockManagerMasterHeartbeat
+26/10/16 02:27:04 INFO DiskBlockManager: Created local directory at /tmp/blockmgr-c07f5f60-7564-4051-b6b5-ca848a3ce8b0
+26/10/16 02:27:04 INFO SparkEnv: Registering OutputCommitCoordinator
+26/10/16 02:27:04 INFO JettyUtils: Start Jetty 0.0.0.0:4040 for SparkUI
+26/10/16 02:27:04 INFO Utils: Successfully started service 'SparkUI' on port 4040.
+26/10/16 02:27:04 INFO ResourceProfile: Default ResourceProfile created, executor resources: Map(cores -> name: cores, amount: 1, script: , vendor: , memory -> name: memory, amount: 1024, script: , vendor: , offHeap -> name: offHeap, amount: 0, script: , vendor: ), task resources: Map(cpus -> name: cpus, amount: 1.0)
+26/10/16 02:27:04 INFO ResourceProfile: Limiting resource is cpus at 1 tasks per executor
+26/10/16 02:27:04 INFO ResourceProfileManager: Added ResourceProfile id: 0
+26/10/16 02:27:04 INFO SecurityManager: Changing view acls to: spark,anonymous
+26/10/16 02:27:04 INFO SecurityManager: Changing modify acls to: spark,anonymous
+26/10/16 02:27:04 INFO SecurityManager: Changing view acls groups to: spark,anonymous
+26/10/16 02:27:04 INFO SecurityManager: Changing modify acls groups to: spark,anonymous
+26/10/16 02:27:04 INFO SecurityManager: SecurityManager: authentication disabled; ui acls disabled; users with view permissions: spark, anonymous groups with view permissions: EMPTY; users with modify permissions: spark, anonymous; groups with modify permissions: EMPTY; RPC SSL disabled
+26/10/16 02:27:04 INFO StandaloneAppClient$ClientEndpoint: Connecting to master spark://spark-master:7077...
+26/10/16 02:27:04 INFO TransportClientFactory: Successfully created connection to spark-master/172.22.0.4:7077 after 14 ms (0 ms spent in bootstraps)
+26/10/16 02:27:05 INFO StandaloneSchedulerBackend: Connected to Spark cluster with app ID app-20261016022705-0000
+26/10/16 02:27:05 INFO Utils: Successfully started service 'org.apache.spark.network.netty.NettyBlockTransferService' on port 43167.
+26/10/16 02:27:05 INFO NettyBlockTransferService: Server created on kyuubi 0.0.0.0:43167
+26/10/16 02:27:05 INFO BlockManager: Using org.apache.spark.storage.RandomBlockReplicationPolicy for block replication policy
+26/10/16 02:27:05 INFO BlockManagerMaster: Registering BlockManager BlockManagerId(driver, kyuubi, 43167, None)
+26/10/16 02:27:05 INFO BlockManagerMasterEndpoint: Registering block manager kyuubi:43167 with 434.4 MiB RAM, BlockManagerId(driver, kyuubi, 43167, None)
+26/10/16 02:27:05 INFO BlockManagerMaster: Registered BlockManager BlockManagerId(driver, kyuubi, 43167, None)
+26/10/16 02:27:05 INFO BlockManager: Initialized BlockManager: BlockManagerId(driver, kyuubi, 43167, None)
+26/10/16 02:27:05 INFO StandaloneAppClient$ClientEndpoint: Executor added: app-20261016022705-0000/0 on worker-20261016022117-172.22.0.6-34991 (172.22.0.6:34991) with 1 core(s)
+26/10/16 02:27:05 INFO StandaloneSchedulerBackend: Granted executor ID app-20261016022705-0000/0 on hostPort 172.22.0.6:34991 with 1 core(s), 1024.0 MiB RAM
+26/10/16 02:27:05 INFO StandaloneAppClient$ClientEndpoint: Executor added: app-20261016022705-0000/1 on worker-20261016022117-172.22.0.6-34991 (172.22.0.6:34991) with 1 core(s)
+26/10/16 02:27:05 INFO StandaloneSchedulerBackend: Granted executor ID app-20261016022705-0000/1 on hostPort 172.22.0.6:34991 with 1 core(s), 1024.0 MiB RAM
+26/10/16 02:27:05 INFO StandaloneAppClient$ClientEndpoint: Executor updated: app-20261016022705-0000/1 is now RUNNING
+26/10/16 02:27:05 INFO StandaloneAppClient$ClientEndpoint: Executor updated: app-20261016022705-0000/0 is now RUNNING
+26/10/16 02:27:05 INFO RollingEventLogFilesWriter: Logging events to s3a://spark-logs/events/eventlog_v2_app-20261016022705-0000/events_1_app-20261016022705-0000.zstd
+26/10/16 02:27:05 INFO StandaloneSchedulerBackend: SchedulerBackend is ready for scheduling beginning after reached minRegisteredResourcesRatio: 0.0
+26/10/16 02:27:07 INFO SharedState: Setting hive.metastore.warehouse.dir ('null') to the value of spark.sql.warehouse.dir.
+26/10/16 02:27:07 INFO SharedState: Warehouse path is 's3a://warehouse/'.
+26/10/16 02:27:08 INFO StandaloneSchedulerBackend$StandaloneDriverEndpoint: Registered executor NettyRpcEndpointRef(spark-client://Executor) (172.22.0.6:50174) with ID 0, ResourceProfileId 0
+26/10/16 02:27:08 INFO BlockManagerMasterEndpoint: Registering block manager 172.22.0.6:33109 with 434.4 MiB RAM, BlockManagerId(0, 172.22.0.6, 33109, None)
+26/10/16 02:27:08 INFO StandaloneSchedulerBackend$StandaloneDriverEndpoint: Registered executor NettyRpcEndpointRef(spark-client://Executor) (172.22.0.6:50190) with ID 1, ResourceProfileId 0
+26/10/16 02:27:08 INFO BlockManagerMasterEndpoint: Registering block manager 172.22.0.6:33165 with 434.4 MiB RAM, BlockManagerId(1, 172.22.0.6, 33165, None)
+26/10/16 02:27:08 INFO HadoopFSUtils: Listing s3a://data/input/sample.txt with listFiles API
+26/10/16 02:27:08 INFO InMemoryFileIndex: It took 39 ms to list leaf files for 1 paths.
+26/10/16 02:27:09 INFO FileSourceStrategy: Pushed Filters: 
+26/10/16 02:27:09 INFO FileSourceStrategy: Post-Scan Filters: Set()
+26/10/16 02:27:10 INFO CodeGenerator: Code generated in 163.34875 ms
+26/10/16 02:27:10 INFO MemoryStore: MemoryStore started with capacity 434.4 MiB
+26/10/16 02:27:10 INFO MemoryStore: Block broadcast_0 stored as values in memory (estimated size 220.0 KiB, free 434.2 MiB)
+26/10/16 02:27:10 INFO MemoryStore: Block broadcast_0_piece0 stored as bytes in memory (estimated size 39.9 KiB, free 434.1 MiB)
+26/10/16 02:27:10 INFO SparkContext: Created broadcast 0 from $anonfun$withThreadLocalCaptured$2 at CompletableFuture.java:1768
+26/10/16 02:27:10 INFO FileSourceScanExec: Planning scan with bin packing, max size: 4194304 bytes, open cost is considered as scanning 4194304 bytes.
+26/10/16 02:27:10 INFO DAGScheduler: Registering RDD 3 ($anonfun$withThreadLocalCaptured$2 at CompletableFuture.java:1768) as input to shuffle 0
+26/10/16 02:27:10 INFO DAGScheduler: Got map stage job 0 ($anonfun$withThreadLocalCaptured$2 at CompletableFuture.java:1768) with 1 output partitions
+26/10/16 02:27:10 INFO DAGScheduler: Final stage: ShuffleMapStage 0 ($anonfun$withThreadLocalCaptured$2 at CompletableFuture.java:1768)
+26/10/16 02:27:10 INFO DAGScheduler: Parents of final stage: List()
+26/10/16 02:27:10 INFO DAGScheduler: Missing parents: List()
+26/10/16 02:27:10 INFO DAGScheduler: Missing parents found for ShuffleMapStage 0: List()
+26/10/16 02:27:10 INFO DAGScheduler: Submitting ShuffleMapStage 0 (MapPartitionsRDD[3] at $anonfun$withThreadLocalCaptured$2 at CompletableFuture.java:1768), which has no missing parents
+26/10/16 02:27:10 INFO MemoryStore: Block broadcast_1 stored as values in memory (estimated size 36.9 KiB, free 434.1 MiB)
+26/10/16 02:27:10 INFO MemoryStore: Block broadcast_1_piece0 stored as bytes in memory (estimated size 16.5 KiB, free 434.1 MiB)
+26/10/16 02:27:10 INFO SparkContext: Created broadcast 1 from broadcast at DAGScheduler.scala:1686
+26/10/16 02:27:10 INFO DAGScheduler: Submitting 1 missing tasks from ShuffleMapStage 0 (MapPartitionsRDD[3] at $anonfun$withThreadLocalCaptured$2 at CompletableFuture.java:1768) (first 15 tasks are for partitions Vector(0))
+26/10/16 02:27:10 INFO TaskSchedulerImpl: Adding task set 0.0 with 1 tasks resource profile 0
+26/10/16 02:27:10 INFO TaskSetManager: Starting task 0.0 in stage 0.0 (TID 0) (172.22.0.6,executor 0, partition 0, PROCESS_LOCAL, 10214 bytes) 
+26/10/16 02:27:15 INFO TaskSetManager: Finished task 0.0 in stage 0.0 (TID 0) in 5139 ms on 172.22.0.6 (executor 0) (1/1)
+26/10/16 02:27:15 INFO TaskSchedulerImpl: Removed TaskSet 0.0 whose tasks have all completed, from pool 
+26/10/16 02:27:15 INFO DAGScheduler: ShuffleMapStage 0 ($anonfun$withThreadLocalCaptured$2 at CompletableFuture.java:1768) finished in 5188 ms
+26/10/16 02:27:15 INFO DAGScheduler: looking for newly runnable stages
+26/10/16 02:27:15 INFO DAGScheduler: running: HashSet()
+26/10/16 02:27:15 INFO DAGScheduler: waiting: HashSet()
+26/10/16 02:27:15 INFO DAGScheduler: failed: HashSet()
+26/10/16 02:27:15 INFO ShufflePartitionsUtil: For shuffle(0, advisory target size: 67108864, actual target size 1048576, minimum partition size: 1048576
+26/10/16 02:27:15 INFO HashAggregateExec: spark.sql.codegen.aggregate.map.twolevel.enabled is set to true, but current version of codegened fast hashmap does not support this aggregate.
+26/10/16 02:27:15 INFO CodeGenerator: Code generated in 14.181708 ms
+26/10/16 02:27:15 INFO CodeGenerator: Code generated in 15.539709 ms
+26/10/16 02:27:15 INFO SparkContext: Starting job: $anonfun$withThreadLocalCaptured$2 at CompletableFuture.java:1768
+26/10/16 02:27:15 INFO DAGScheduler: Got job 1 ($anonfun$withThreadLocalCaptured$2 at CompletableFuture.java:1768) with 1 output partitions
+26/10/16 02:27:15 INFO DAGScheduler: Final stage: ResultStage 2 ($anonfun$withThreadLocalCaptured$2 at CompletableFuture.java:1768)
+26/10/16 02:27:15 INFO DAGScheduler: Parents of final stage: List(ShuffleMapStage 1)
+26/10/16 02:27:15 INFO DAGScheduler: Missing parents: List()
+26/10/16 02:27:15 INFO DAGScheduler: Missing parents found for ResultStage 2: List()
+26/10/16 02:27:15 INFO DAGScheduler: Submitting ResultStage 2 (MapPartitionsRDD[8] at $anonfun$withThreadLocalCaptured$2 at CompletableFuture.java:1768), which has no missing parents
+26/10/16 02:27:15 INFO MemoryStore: Block broadcast_2 stored as values in memory (estimated size 40.8 KiB, free 434.1 MiB)
+26/10/16 02:27:15 INFO MemoryStore: Block broadcast_2_piece0 stored as bytes in memory (estimated size 17.9 KiB, free 434.0 MiB)
+26/10/16 02:27:15 INFO SparkContext: Created broadcast 2 from broadcast at DAGScheduler.scala:1686
+26/10/16 02:27:15 INFO DAGScheduler: Submitting 1 missing tasks from ResultStage 2 (MapPartitionsRDD[8] at $anonfun$withThreadLocalCaptured$2 at CompletableFuture.java:1768) (first 15 tasks are for partitions Vector(0))
+26/10/16 02:27:15 INFO TaskSchedulerImpl: Adding task set 2.0 with 1 tasks resource profile 0
+26/10/16 02:27:15 INFO TaskSetManager: Starting task 0.0 in stage 2.0 (TID 1) (172.22.0.6,executor 0, partition 0, NODE_LOCAL, 9635 bytes) 
+26/10/16 02:27:15 INFO MapOutputTrackerMasterEndpoint: Asked to send map output locations for shuffle 0 to 172.22.0.6:50174
+26/10/16 02:27:15 INFO TaskSetManager: Finished task 0.0 in stage 2.0 (TID 1) in 179 ms on 172.22.0.6 (executor 0) (1/1)
+26/10/16 02:27:15 INFO TaskSchedulerImpl: Removed TaskSet 2.0 whose tasks have all completed, from pool 
+26/10/16 02:27:15 INFO DAGScheduler: ResultStage 2 ($anonfun$withThreadLocalCaptured$2 at CompletableFuture.java:1768) finished in 200 ms
+26/10/16 02:27:15 INFO DAGScheduler: Job 1 is finished. Cancelling potential speculative or zombie tasks for this job
+26/10/16 02:27:15 INFO TaskSchedulerImpl: Canceling stage 2
+26/10/16 02:27:15 INFO TaskSchedulerImpl: Killing all running tasks in stage 2: Stage finished
+26/10/16 02:27:15 INFO DAGScheduler: Job 1 finished: $anonfun$withThreadLocalCaptured$2 at CompletableFuture.java:1768, took 214.729209 ms
+26/10/16 02:27:15 INFO DAGScheduler: Registering RDD 9 ($anonfun$withThreadLocalCaptured$2 at CompletableFuture.java:1768) as input to shuffle 1
+26/10/16 02:27:15 INFO DAGScheduler: Got map stage job 2 ($anonfun$withThreadLocalCaptured$2 at CompletableFuture.java:1768) with 1 output partitions
+26/10/16 02:27:15 INFO DAGScheduler: Final stage: ShuffleMapStage 4 ($anonfun$withThreadLocalCaptured$2 at CompletableFuture.java:1768)
+26/10/16 02:27:15 INFO DAGScheduler: Parents of final stage: List(ShuffleMapStage 3)
+26/10/16 02:27:15 INFO DAGScheduler: Missing parents: List()
+26/10/16 02:27:15 INFO DAGScheduler: Missing parents found for ShuffleMapStage 4: List()
+26/10/16 02:27:15 INFO DAGScheduler: Submitting ShuffleMapStage 4 (MapPartitionsRDD[9] at $anonfun$withThreadLocalCaptured$2 at CompletableFuture.java:1768), which has no missing parents
+26/10/16 02:27:15 INFO MemoryStore: Block broadcast_3 stored as values in memory (estimated size 45.9 KiB, free 434.0 MiB)
+26/10/16 02:27:15 INFO MemoryStore: Block broadcast_3_piece0 stored as bytes in memory (estimated size 19.4 KiB, free 434.0 MiB)
+26/10/16 02:27:15 INFO SparkContext: Created broadcast 3 from broadcast at DAGScheduler.scala:1686
+26/10/16 02:27:15 INFO DAGScheduler: Submitting 1 missing tasks from ShuffleMapStage 4 (MapPartitionsRDD[9] at $anonfun$withThreadLocalCaptured$2 at CompletableFuture.java:1768) (first 15 tasks are for partitions Vector(0))
+26/10/16 02:27:15 INFO TaskSchedulerImpl: Adding task set 4.0 with 1 tasks resource profile 0
+26/10/16 02:27:15 INFO TaskSetManager: Starting task 0.0 in stage 4.0 (TID 2) (172.22.0.6,executor 0, partition 0, NODE_LOCAL, 9624 bytes) 
+26/10/16 02:27:15 INFO TaskSetManager: Finished task 0.0 in stage 4.0 (TID 2) in 72 ms on 172.22.0.6 (executor 0) (1/1)
+26/10/16 02:27:15 INFO TaskSchedulerImpl: Removed TaskSet 4.0 whose tasks have all completed, from pool 
+26/10/16 02:27:15 INFO DAGScheduler: ShuffleMapStage 4 ($anonfun$withThreadLocalCaptured$2 at CompletableFuture.java:1768) finished in 88 ms
+26/10/16 02:27:15 INFO DAGScheduler: looking for newly runnable stages
+26/10/16 02:27:15 INFO DAGScheduler: running: HashSet()
+26/10/16 02:27:15 INFO DAGScheduler: waiting: HashSet()
+26/10/16 02:27:15 INFO DAGScheduler: failed: HashSet()
+26/10/16 02:27:15 INFO ShufflePartitionsUtil: For shuffle(1, advisory target size: 67108864, actual target size 1048576, minimum partition size: 1048576
+26/10/16 02:27:15 INFO PathOutputCommitterFactory: Using schema-specific factory for s3a://data/output/wc
+26/10/16 02:27:15 INFO PathOutputCommitterFactory: Using OutputCommitter factory class class org.apache.hadoop.fs.s3a.commit.S3ACommitterFactory from key mapreduce.outputcommitter.factory.scheme.s3a
+26/10/16 02:27:15 WARN AbstractS3ACommitterFactory: Using standard FileOutputCommitter to commit work. This is slow and potentially unsafe.
+26/10/16 02:27:15 INFO FileOutputCommitter: File Output Committer Algorithm version is 1
+26/10/16 02:27:15 INFO FileOutputCommitter: FileOutputCommitter skip cleanup _temporary folders under output directory:false, ignore cleanup failures: false
+26/10/16 02:27:15 INFO AbstractS3ACommitterFactory: Using Committer FileOutputCommitter{PathOutputCommitter{context=TaskAttemptContextImpl{JobContextImpl{jobId=job_202610160227151125938743504130053_0000}; taskId=attempt_202610160227151125938743504130053_0000_m_000000_0, status=''}; org.apache.hadoop.mapreduce.lib.output.FileOutputCommitter@13cb09ee}; outputPath=s3a://data/output/wc, workPath=s3a://data/output/wc/_temporary/0/_temporary/attempt_202610160227151125938743504130053_0000_m_000000_0, algorithmVersion=1, skipCleanup=false, ignoreCleanupFailures=false} for s3a://data/output/wc created by org.apache.hadoop.fs.s3a.commit.S3ACommitterFactory@4f645c87
+26/10/16 02:27:15 INFO SQLHadoopMapReduceCommitProtocol: Using output committer class org.apache.hadoop.mapreduce.lib.output.FileOutputCommitter
+26/10/16 02:27:15 INFO CodeGenerator: Code generated in 5.628458 ms
+26/10/16 02:27:15 INFO SparkContext: Starting job: $anonfun$withThreadLocalCaptured$2 at CompletableFuture.java:1768
+26/10/16 02:27:15 INFO DAGScheduler: Got job 3 ($anonfun$withThreadLocalCaptured$2 at CompletableFuture.java:1768) with 1 output partitions
+26/10/16 02:27:15 INFO DAGScheduler: Final stage: ResultStage 7 ($anonfun$withThreadLocalCaptured$2 at CompletableFuture.java:1768)
+26/10/16 02:27:15 INFO DAGScheduler: Parents of final stage: List(ShuffleMapStage 6)
+26/10/16 02:27:15 INFO DAGScheduler: Missing parents: List()
+26/10/16 02:27:15 INFO DAGScheduler: Missing parents found for ResultStage 7: List()
+26/10/16 02:27:15 INFO DAGScheduler: Submitting ResultStage 7 (MapPartitionsRDD[13] at $anonfun$withThreadLocalCaptured$2 at CompletableFuture.java:1768), which has no missing parents
+26/10/16 02:27:16 INFO MemoryStore: Block broadcast_4 stored as values in memory (estimated size 272.0 KiB, free 433.8 MiB)
+26/10/16 02:27:16 INFO MemoryStore: Block broadcast_4_piece0 stored as bytes in memory (estimated size 100.4 KiB, free 433.7 MiB)
+26/10/16 02:27:16 INFO SparkContext: Created broadcast 4 from broadcast at DAGScheduler.scala:1686
+26/10/16 02:27:16 INFO DAGScheduler: Submitting 1 missing tasks from ResultStage 7 (MapPartitionsRDD[13] at $anonfun$withThreadLocalCaptured$2 at CompletableFuture.java:1768) (first 15 tasks are for partitions Vector(0))
+26/10/16 02:27:16 INFO TaskSchedulerImpl: Adding task set 7.0 with 1 tasks resource profile 0
+26/10/16 02:27:16 INFO TaskSetManager: Starting task 0.0 in stage 7.0 (TID 3) (172.22.0.6,executor 1, partition 0, NODE_LOCAL, 9982 bytes) 
+26/10/16 02:27:17 INFO MapOutputTrackerMasterEndpoint: Asked to send map output locations for shuffle 1 to 172.22.0.6:50190
+26/10/16 02:27:18 INFO TaskSetManager: Finished task 0.0 in stage 7.0 (TID 3) in 2050 ms on 172.22.0.6 (executor 1) (1/1)
+26/10/16 02:27:18 INFO TaskSchedulerImpl: Removed TaskSet 7.0 whose tasks have all completed, from pool 
+26/10/16 02:27:18 INFO DAGScheduler: ResultStage 7 ($anonfun$withThreadLocalCaptured$2 at CompletableFuture.java:1768) finished in 2085 ms
+26/10/16 02:27:18 INFO DAGScheduler: Job 3 is finished. Cancelling potential speculative or zombie tasks for this job
+26/10/16 02:27:18 INFO TaskSchedulerImpl: Canceling stage 7
+26/10/16 02:27:18 INFO TaskSchedulerImpl: Killing all running tasks in stage 7: Stage finished
+26/10/16 02:27:18 INFO DAGScheduler: Job 3 finished: $anonfun$withThreadLocalCaptured$2 at CompletableFuture.java:1768, took 2087.787167 ms
+26/10/16 02:27:18 INFO FileFormatWriter: Start to commit write Job 7cf059bf-113c-4254-b40b-1c1b73dc835b.
+26/10/16 02:27:18 INFO FileFormatWriter: Write Job 7cf059bf-113c-4254-b40b-1c1b73dc835b committed. Elapsed time: 173 ms.
+26/10/16 02:27:18 INFO FileFormatWriter: Finished processing stats for write job 7cf059bf-113c-4254-b40b-1c1b73dc835b.
+26/10/16 02:27:18 INFO FileSourceStrategy: Pushed Filters: 
+26/10/16 02:27:18 INFO FileSourceStrategy: Post-Scan Filters: Set()
+26/10/16 02:27:18 INFO CodeGenerator: Code generated in 6.365375 ms
+26/10/16 02:27:18 INFO MemoryStore: Block broadcast_5 stored as values in memory (estimated size 220.0 KiB, free 433.6 MiB)
+26/10/16 02:27:18 INFO MemoryStore: Block broadcast_5_piece0 stored as bytes in memory (estimated size 39.9 KiB, free 433.9 MiB)
+26/10/16 02:27:18 INFO SparkContext: Created broadcast 5 from $anonfun$withThreadLocalCaptured$2 at CompletableFuture.java:1768
+26/10/16 02:27:18 INFO FileSourceScanExec: Planning scan with bin packing, max size: 4194304 bytes, open cost is considered as scanning 4194304 bytes.
+26/10/16 02:27:18 INFO DAGScheduler: Registering RDD 17 ($anonfun$withThreadLocalCaptured$2 at CompletableFuture.java:1768) as input to shuffle 2
+26/10/16 02:27:18 INFO DAGScheduler: Got map stage job 4 ($anonfun$withThreadLocalCaptured$2 at CompletableFuture.java:1768) with 1 output partitions
+26/10/16 02:27:18 INFO DAGScheduler: Final stage: ShuffleMapStage 8 ($anonfun$withThreadLocalCaptured$2 at CompletableFuture.java:1768)
+26/10/16 02:27:18 INFO DAGScheduler: Parents of final stage: List()
+26/10/16 02:27:18 INFO DAGScheduler: Missing parents: List()
+26/10/16 02:27:18 INFO DAGScheduler: Missing parents found for ShuffleMapStage 8: List()
+26/10/16 02:27:18 INFO DAGScheduler: Submitting ShuffleMapStage 8 (MapPartitionsRDD[17] at $anonfun$withThreadLocalCaptured$2 at CompletableFuture.java:1768), which has no missing parents
+26/10/16 02:27:18 INFO MemoryStore: Block broadcast_6 stored as values in memory (estimated size 17.2 KiB, free 433.9 MiB)
+26/10/16 02:27:18 INFO MemoryStore: Block broadcast_6_piece0 stored as bytes in memory (estimated size 8.1 KiB, free 433.9 MiB)
+26/10/16 02:27:18 INFO SparkContext: Created broadcast 6 from broadcast at DAGScheduler.scala:1686
+26/10/16 02:27:18 INFO DAGScheduler: Submitting 1 missing tasks from ShuffleMapStage 8 (MapPartitionsRDD[17] at $anonfun$withThreadLocalCaptured$2 at CompletableFuture.java:1768) (first 15 tasks are for partitions Vector(0))
+26/10/16 02:27:18 INFO TaskSchedulerImpl: Adding task set 8.0 with 1 tasks resource profile 0
+26/10/16 02:27:18 INFO TaskSetManager: Starting task 0.0 in stage 8.0 (TID 4) (172.22.0.6,executor 0, partition 0, PROCESS_LOCAL, 10214 bytes) 
+26/10/16 02:27:18 INFO TaskSetManager: Finished task 0.0 in stage 8.0 (TID 4) in 69 ms on 172.22.0.6 (executor 0) (1/1)
+26/10/16 02:27:18 INFO TaskSchedulerImpl: Removed TaskSet 8.0 whose tasks have all completed, from pool 
+26/10/16 02:27:18 INFO DAGScheduler: ShuffleMapStage 8 ($anonfun$withThreadLocalCaptured$2 at CompletableFuture.java:1768) finished in 75 ms
+26/10/16 02:27:18 INFO DAGScheduler: looking for newly runnable stages
+26/10/16 02:27:18 INFO DAGScheduler: running: HashSet()
+26/10/16 02:27:18 INFO DAGScheduler: waiting: HashSet()
+26/10/16 02:27:18 INFO DAGScheduler: failed: HashSet()
+26/10/16 02:27:18 INFO CodeGenerator: Code generated in 5.571083 ms
+26/10/16 02:27:18 INFO SparkContext: Starting job: $anonfun$withThreadLocalCaptured$2 at CompletableFuture.java:1768
+26/10/16 02:27:18 INFO DAGScheduler: Got job 5 ($anonfun$withThreadLocalCaptured$2 at CompletableFuture.java:1768) with 1 output partitions
+26/10/16 02:27:18 INFO DAGScheduler: Final stage: ResultStage 10 ($anonfun$withThreadLocalCaptured$2 at CompletableFuture.java:1768)
+26/10/16 02:27:18 INFO DAGScheduler: Parents of final stage: List(ShuffleMapStage 9)
+26/10/16 02:27:18 INFO DAGScheduler: Missing parents: List()
+26/10/16 02:27:18 INFO DAGScheduler: Missing parents found for ResultStage 10: List()
+26/10/16 02:27:18 INFO DAGScheduler: Submitting ResultStage 10 (MapPartitionsRDD[20] at $anonfun$withThreadLocalCaptured$2 at CompletableFuture.java:1768), which has no missing parents
+26/10/16 02:27:18 INFO MemoryStore: Block broadcast_7 stored as values in memory (estimated size 13.8 KiB, free 433.9 MiB)
+26/10/16 02:27:18 INFO MemoryStore: Block broadcast_7_piece0 stored as bytes in memory (estimated size 6.6 KiB, free 433.8 MiB)
+26/10/16 02:27:18 INFO SparkContext: Created broadcast 7 from broadcast at DAGScheduler.scala:1686
+26/10/16 02:27:18 INFO DAGScheduler: Submitting 1 missing tasks from ResultStage 10 (MapPartitionsRDD[20] at $anonfun$withThreadLocalCaptured$2 at CompletableFuture.java:1768) (first 15 tasks are for partitions Vector(0))
+26/10/16 02:27:18 INFO TaskSchedulerImpl: Adding task set 10.0 with 1 tasks resource profile 0
+26/10/16 02:27:18 INFO TaskSetManager: Starting task 0.0 in stage 10.0 (TID 5) (172.22.0.6,executor 0, partition 0, NODE_LOCAL, 9635 bytes) 
+26/10/16 02:27:18 INFO MapOutputTrackerMasterEndpoint: Asked to send map output locations for shuffle 2 to 172.22.0.6:50174
+26/10/16 02:27:18 INFO TaskSetManager: Finished task 0.0 in stage 10.0 (TID 5) in 36 ms on 172.22.0.6 (executor 0) (1/1)
+26/10/16 02:27:18 INFO TaskSchedulerImpl: Removed TaskSet 10.0 whose tasks have all completed, from pool 
+26/10/16 02:27:18 INFO DAGScheduler: ResultStage 10 ($anonfun$withThreadLocalCaptured$2 at CompletableFuture.java:1768) finished in 44 ms
+26/10/16 02:27:18 INFO DAGScheduler: Job 5 is finished. Cancelling potential speculative or zombie tasks for this job
+26/10/16 02:27:18 INFO TaskSchedulerImpl: Canceling stage 10
+26/10/16 02:27:18 INFO TaskSchedulerImpl: Killing all running tasks in stage 10: Stage finished
+26/10/16 02:27:18 INFO DAGScheduler: Job 5 finished: $anonfun$withThreadLocalCaptured$2 at CompletableFuture.java:1768, took 46.142542 ms
+Read 13 lines from s3a://data/input/sample.txt
+26/10/16 02:27:18 INFO FileSourceStrategy: Pushed Filters: 
+26/10/16 02:27:18 INFO FileSourceStrategy: Post-Scan Filters: Set()
+26/10/16 02:27:18 INFO CodeGenerator: Code generated in 16.195792 ms
+26/10/16 02:27:18 INFO MemoryStore: Block broadcast_8 stored as values in memory (estimated size 220.0 KiB, free 433.7 MiB)
+26/10/16 02:27:18 INFO MemoryStore: Block broadcast_8_piece0 stored as bytes in memory (estimated size 39.9 KiB, free 433.6 MiB)
+26/10/16 02:27:18 INFO SparkContext: Created broadcast 8 from $anonfun$withThreadLocalCaptured$2 at CompletableFuture.java:1768
+26/10/16 02:27:18 INFO FileSourceScanExec: Planning scan with bin packing, max size: 4194304 bytes, open cost is considered as scanning 4194304 bytes.
+26/10/16 02:27:18 INFO DAGScheduler: Registering RDD 24 ($anonfun$withThreadLocalCaptured$2 at CompletableFuture.java:1768) as input to shuffle 3
+26/10/16 02:27:18 INFO DAGScheduler: Got map stage job 6 ($anonfun$withThreadLocalCaptured$2 at CompletableFuture.java:1768) with 1 output partitions
+26/10/16 02:27:18 INFO DAGScheduler: Final stage: ShuffleMapStage 11 ($anonfun$withThreadLocalCaptured$2 at CompletableFuture.java:1768)
+26/10/16 02:27:18 INFO DAGScheduler: Parents of final stage: List()
+26/10/16 02:27:18 INFO DAGScheduler: Missing parents: List()
+26/10/16 02:27:18 INFO DAGScheduler: Missing parents found for ShuffleMapStage 11: List()
+26/10/16 02:27:18 INFO DAGScheduler: Submitting ShuffleMapStage 11 (MapPartitionsRDD[24] at $anonfun$withThreadLocalCaptured$2 at CompletableFuture.java:1768), which has no missing parents
+26/10/16 02:27:18 INFO MemoryStore: Block broadcast_9 stored as values in memory (estimated size 33.5 KiB, free 433.9 MiB)
+26/10/16 02:27:18 INFO MemoryStore: Block broadcast_9_piece0 stored as bytes in memory (estimated size 14.7 KiB, free 433.8 MiB)
+26/10/16 02:27:18 INFO SparkContext: Created broadcast 9 from broadcast at DAGScheduler.scala:1686
+26/10/16 02:27:18 INFO DAGScheduler: Submitting 1 missing tasks from ShuffleMapStage 11 (MapPartitionsRDD[24] at $anonfun$withThreadLocalCaptured$2 at CompletableFuture.java:1768) (first 15 tasks are for partitions Vector(0))
+26/10/16 02:27:18 INFO TaskSchedulerImpl: Adding task set 11.0 with 1 tasks resource profile 0
+26/10/16 02:27:18 INFO TaskSetManager: Starting task 0.0 in stage 11.0 (TID 6) (172.22.0.6,executor 0, partition 0, PROCESS_LOCAL, 10214 bytes) 
+26/10/16 02:27:18 INFO TaskSetManager: Finished task 0.0 in stage 11.0 (TID 6) in 80 ms on 172.22.0.6 (executor 0) (1/1)
+26/10/16 02:27:18 INFO TaskSchedulerImpl: Removed TaskSet 11.0 whose tasks have all completed, from pool 
+26/10/16 02:27:18 INFO DAGScheduler: ShuffleMapStage 11 ($anonfun$withThreadLocalCaptured$2 at CompletableFuture.java:1768) finished in 88 ms
+26/10/16 02:27:18 INFO DAGScheduler: looking for newly runnable stages
+26/10/16 02:27:18 INFO DAGScheduler: running: HashSet()
+26/10/16 02:27:18 INFO DAGScheduler: waiting: HashSet()
+26/10/16 02:27:18 INFO DAGScheduler: failed: HashSet()
+26/10/16 02:27:18 INFO ShufflePartitionsUtil: For shuffle(3, advisory target size: 67108864, actual target size 1048576, minimum partition size: 1048576
+26/10/16 02:27:18 INFO CodeGenerator: Code generated in 11.857125 ms
+26/10/16 02:27:18 INFO DAGScheduler: Registering RDD 27 ($anonfun$withThreadLocalCaptured$2 at CompletableFuture.java:1768) as input to shuffle 4
+26/10/16 02:27:18 INFO DAGScheduler: Got map stage job 7 ($anonfun$withThreadLocalCaptured$2 at CompletableFuture.java:1768) with 1 output partitions
+26/10/16 02:27:18 INFO DAGScheduler: Final stage: ShuffleMapStage 13 ($anonfun$withThreadLocalCaptured$2 at CompletableFuture.java:1768)
+26/10/16 02:27:18 INFO DAGScheduler: Parents of final stage: List(ShuffleMapStage 12)
+26/10/16 02:27:18 INFO DAGScheduler: Missing parents: List()
+26/10/16 02:27:18 INFO DAGScheduler: Missing parents found for ShuffleMapStage 13: List()
+26/10/16 02:27:18 INFO DAGScheduler: Submitting ShuffleMapStage 13 (MapPartitionsRDD[27] at $anonfun$withThreadLocalCaptured$2 at CompletableFuture.java:1768), which has no missing parents
+26/10/16 02:27:18 INFO MemoryStore: Block broadcast_10 stored as values in memory (estimated size 44.1 KiB, free 433.8 MiB)
+26/10/16 02:27:18 INFO MemoryStore: Block broadcast_10_piece0 stored as bytes in memory (estimated size 19.4 KiB, free 433.8 MiB)
+26/10/16 02:27:18 INFO SparkContext: Created broadcast 10 from broadcast at DAGScheduler.scala:1686
+26/10/16 02:27:18 INFO DAGScheduler: Submitting 1 missing tasks from ShuffleMapStage 13 (MapPartitionsRDD[27] at $anonfun$withThreadLocalCaptured$2 at CompletableFuture.java:1768) (first 15 tasks are for partitions Vector(0))
+26/10/16 02:27:18 INFO TaskSchedulerImpl: Adding task set 13.0 with 1 tasks resource profile 0
+26/10/16 02:27:18 INFO TaskSetManager: Starting task 0.0 in stage 13.0 (TID 7) (172.22.0.6,executor 0, partition 0, NODE_LOCAL, 9624 bytes) 
+26/10/16 02:27:18 INFO MapOutputTrackerMasterEndpoint: Asked to send map output locations for shuffle 3 to 172.22.0.6:50174
+26/10/16 02:27:18 INFO TaskSetManager: Finished task 0.0 in stage 13.0 (TID 7) in 42 ms on 172.22.0.6 (executor 0) (1/1)
+26/10/16 02:27:18 INFO TaskSchedulerImpl: Removed TaskSet 13.0 whose tasks have all completed, from pool 
+26/10/16 02:27:18 INFO DAGScheduler: ShuffleMapStage 13 ($anonfun$withThreadLocalCaptured$2 at CompletableFuture.java:1768) finished in 50 ms
+26/10/16 02:27:18 INFO DAGScheduler: looking for newly runnable stages
+26/10/16 02:27:18 INFO DAGScheduler: running: HashSet()
+26/10/16 02:27:18 INFO DAGScheduler: waiting: HashSet()
+26/10/16 02:27:18 INFO DAGScheduler: failed: HashSet()
+26/10/16 02:27:18 INFO CodeGenerator: Code generated in 4.926417 ms
+26/10/16 02:27:18 INFO SparkContext: Starting job: $anonfun$withThreadLocalCaptured$2 at CompletableFuture.java:1768
+26/10/16 02:27:18 INFO DAGScheduler: Got job 8 ($anonfun$withThreadLocalCaptured$2 at CompletableFuture.java:1768) with 1 output partitions
+26/10/16 02:27:18 INFO DAGScheduler: Final stage: ResultStage 16 ($anonfun$withThreadLocalCaptured$2 at CompletableFuture.java:1768)
+26/10/16 02:27:18 INFO DAGScheduler: Parents of final stage: List(ShuffleMapStage 15)
+26/10/16 02:27:18 INFO DAGScheduler: Missing parents: List()
+26/10/16 02:27:18 INFO DAGScheduler: Missing parents found for ResultStage 16: List()
+26/10/16 02:27:18 INFO DAGScheduler: Submitting ResultStage 16 (MapPartitionsRDD[30] at $anonfun$withThreadLocalCaptured$2 at CompletableFuture.java:1768), which has no missing parents
+26/10/16 02:27:18 INFO MemoryStore: Block broadcast_11 stored as values in memory (estimated size 13.8 KiB, free 433.8 MiB)
+26/10/16 02:27:18 INFO MemoryStore: Block broadcast_11_piece0 stored as bytes in memory (estimated size 6.6 KiB, free 433.8 MiB)
+26/10/16 02:27:18 INFO SparkContext: Created broadcast 11 from broadcast at DAGScheduler.scala:1686
+26/10/16 02:27:18 INFO DAGScheduler: Submitting 1 missing tasks from ResultStage 16 (MapPartitionsRDD[30] at $anonfun$withThreadLocalCaptured$2 at CompletableFuture.java:1768) (first 15 tasks are for partitions Vector(0))
+26/10/16 02:27:18 INFO TaskSchedulerImpl: Adding task set 16.0 with 1 tasks resource profile 0
+26/10/16 02:27:18 INFO TaskSetManager: Starting task 0.0 in stage 16.0 (TID 8) (172.22.0.6,executor 1, partition 0, NODE_LOCAL, 9635 bytes) 
+26/10/16 02:27:18 INFO MapOutputTrackerMasterEndpoint: Asked to send map output locations for shuffle 4 to 172.22.0.6:50190
+26/10/16 02:27:18 INFO TaskSetManager: Finished task 0.0 in stage 16.0 (TID 8) in 97 ms on 172.22.0.6 (executor 1) (1/1)
+26/10/16 02:27:18 INFO TaskSchedulerImpl: Removed TaskSet 16.0 whose tasks have all completed, from pool 
+26/10/16 02:27:18 INFO DAGScheduler: ResultStage 16 ($anonfun$withThreadLocalCaptured$2 at CompletableFuture.java:1768) finished in 108 ms
+26/10/16 02:27:18 INFO DAGScheduler: Job 8 is finished. Cancelling potential speculative or zombie tasks for this job
+26/10/16 02:27:18 INFO TaskSchedulerImpl: Canceling stage 16
+26/10/16 02:27:18 INFO TaskSchedulerImpl: Killing all running tasks in stage 16: Stage finished
+26/10/16 02:27:18 INFO DAGScheduler: Job 8 finished: $anonfun$withThreadLocalCaptured$2 at CompletableFuture.java:1768, took 110.765958 ms
+Wrote 113 distinct words to s3a://data/output/wc
+26/10/16 02:27:18 INFO FileSourceStrategy: Pushed Filters: 
+26/10/16 02:27:18 INFO FileSourceStrategy: Post-Scan Filters: Set()
+26/10/16 02:27:18 INFO MemoryStore: Block broadcast_12 stored as values in memory (estimated size 220.0 KiB, free 433.7 MiB)
+26/10/16 02:27:18 INFO MemoryStore: Block broadcast_12_piece0 stored as bytes in memory (estimated size 39.9 KiB, free 433.6 MiB)
+26/10/16 02:27:18 INFO SparkContext: Created broadcast 12 from $anonfun$withThreadLocalCaptured$2 at CompletableFuture.java:1768
+26/10/16 02:27:18 INFO FileSourceScanExec: Planning scan with bin packing, max size: 4194304 bytes, open cost is considered as scanning 4194304 bytes.
+26/10/16 02:27:18 INFO DAGScheduler: Registering RDD 34 ($anonfun$withThreadLocalCaptured$2 at CompletableFuture.java:1768) as input to shuffle 5
+26/10/16 02:27:18 INFO DAGScheduler: Got map stage job 9 ($anonfun$withThreadLocalCaptured$2 at CompletableFuture.java:1768) with 1 output partitions
+26/10/16 02:27:18 INFO DAGScheduler: Final stage: ShuffleMapStage 17 ($anonfun$withThreadLocalCaptured$2 at CompletableFuture.java:1768)
+26/10/16 02:27:18 INFO DAGScheduler: Parents of final stage: List()
+26/10/16 02:27:18 INFO DAGScheduler: Missing parents: List()
+26/10/16 02:27:18 INFO DAGScheduler: Missing parents found for ShuffleMapStage 17: List()
+26/10/16 02:27:18 INFO DAGScheduler: Submitting ShuffleMapStage 17 (MapPartitionsRDD[34] at $anonfun$withThreadLocalCaptured$2 at CompletableFuture.java:1768), which has no missing parents
+26/10/16 02:27:18 INFO MemoryStore: Block broadcast_13 stored as values in memory (estimated size 37.1 KiB, free 433.6 MiB)
+26/10/16 02:27:18 INFO MemoryStore: Block broadcast_13_piece0 stored as bytes in memory (estimated size 16.6 KiB, free 433.6 MiB)
+26/10/16 02:27:18 INFO SparkContext: Created broadcast 13 from broadcast at DAGScheduler.scala:1686
+26/10/16 02:27:18 INFO DAGScheduler: Submitting 1 missing tasks from ShuffleMapStage 17 (MapPartitionsRDD[34] at $anonfun$withThreadLocalCaptured$2 at CompletableFuture.java:1768) (first 15 tasks are for partitions Vector(0))
+26/10/16 02:27:18 INFO TaskSchedulerImpl: Adding task set 17.0 with 1 tasks resource profile 0
+26/10/16 02:27:18 INFO TaskSetManager: Starting task 0.0 in stage 17.0 (TID 9) (172.22.0.6,executor 0, partition 0, PROCESS_LOCAL, 10214 bytes) 
+26/10/16 02:27:19 INFO TaskSetManager: Finished task 0.0 in stage 17.0 (TID 9) in 65 ms on 172.22.0.6 (executor 0) (1/1)
+26/10/16 02:27:19 INFO TaskSchedulerImpl: Removed TaskSet 17.0 whose tasks have all completed, from pool 
+26/10/16 02:27:19 INFO DAGScheduler: ShuffleMapStage 17 ($anonfun$withThreadLocalCaptured$2 at CompletableFuture.java:1768) finished in 72 ms
+26/10/16 02:27:19 INFO DAGScheduler: looking for newly runnable stages
+26/10/16 02:27:19 INFO DAGScheduler: running: HashSet()
+26/10/16 02:27:19 INFO DAGScheduler: waiting: HashSet()
+26/10/16 02:27:19 INFO DAGScheduler: failed: HashSet()
+26/10/16 02:27:19 INFO ShufflePartitionsUtil: For shuffle(5, advisory target size: 67108864, actual target size 1048576, minimum partition size: 1048576
+26/10/16 02:27:19 INFO CodeGenerator: Code generated in 8.136334 ms
+26/10/16 02:27:19 INFO HashAggregateExec: spark.sql.codegen.aggregate.map.twolevel.enabled is set to true, but current version of codegened fast hashmap does not support this aggregate.
+26/10/16 02:27:19 INFO SparkContext: Starting job: $anonfun$withThreadLocalCaptured$2 at CompletableFuture.java:1768
+26/10/16 02:27:19 INFO DAGScheduler: Got job 10 ($anonfun$withThreadLocalCaptured$2 at CompletableFuture.java:1768) with 1 output partitions
+26/10/16 02:27:19 INFO DAGScheduler: Final stage: ResultStage 19 ($anonfun$withThreadLocalCaptured$2 at CompletableFuture.java:1768)
+26/10/16 02:27:19 INFO DAGScheduler: Parents of final stage: List(ShuffleMapStage 18)
+26/10/16 02:27:19 INFO DAGScheduler: Missing parents: List()
+26/10/16 02:27:19 INFO DAGScheduler: Missing parents found for ResultStage 19: List()
+26/10/16 02:27:19 INFO DAGScheduler: Submitting ResultStage 19 (MapPartitionsRDD[38] at $anonfun$withThreadLocalCaptured$2 at CompletableFuture.java:1768), which has no missing parents
+26/10/16 02:27:19 INFO MemoryStore: Block broadcast_14 stored as values in memory (estimated size 40.4 KiB, free 433.5 MiB)
+26/10/16 02:27:19 INFO MemoryStore: Block broadcast_14_piece0 stored as bytes in memory (estimated size 17.8 KiB, free 433.5 MiB)
+26/10/16 02:27:19 INFO SparkContext: Created broadcast 14 from broadcast at DAGScheduler.scala:1686
+26/10/16 02:27:19 INFO DAGScheduler: Submitting 1 missing tasks from ResultStage 19 (MapPartitionsRDD[38] at $anonfun$withThreadLocalCaptured$2 at CompletableFuture.java:1768) (first 15 tasks are for partitions Vector(0))
+26/10/16 02:27:19 INFO TaskSchedulerImpl: Adding task set 19.0 with 1 tasks resource profile 0
+26/10/16 02:27:19 INFO TaskSetManager: Starting task 0.0 in stage 19.0 (TID 10) (172.22.0.6,executor 1, partition 0, NODE_LOCAL, 9635 bytes) 
+26/10/16 02:27:19 INFO MapOutputTrackerMasterEndpoint: Asked to send map output locations for shuffle 5 to 172.22.0.6:50190
+26/10/16 02:27:19 INFO TaskSetManager: Finished task 0.0 in stage 19.0 (TID 10) in 109 ms on 172.22.0.6 (executor 1) (1/1)
+26/10/16 02:27:19 INFO TaskSchedulerImpl: Removed TaskSet 19.0 whose tasks have all completed, from pool 
+26/10/16 02:27:19 INFO DAGScheduler: ResultStage 19 ($anonfun$withThreadLocalCaptured$2 at CompletableFuture.java:1768) finished in 115 ms
+26/10/16 02:27:19 INFO DAGScheduler: Job 10 is finished. Cancelling potential speculative or zombie tasks for this job
+26/10/16 02:27:19 INFO TaskSchedulerImpl: Canceling stage 19
+26/10/16 02:27:19 INFO TaskSchedulerImpl: Killing all running tasks in stage 19: Stage finished
+26/10/16 02:27:19 INFO DAGScheduler: Job 10 finished: $anonfun$withThreadLocalCaptured$2 at CompletableFuture.java:1768, took 118.479125 ms
+26/10/16 02:27:19 INFO CodeGenerator: Code generated in 16.85975 ms
+26/10/16 02:27:19 INFO CodeGenerator: Code generated in 7.9465 ms
++------+-----+
+|word  |count|
++------+-----+
+|the   |28   |
+|and   |7    |
+|job   |5    |
+|spark |5    |
+|kyuubi|4    |
+|rustfs|4    |
+|driver|3    |
+|jobs  |3    |
+|read  |3    |
+|runs  |3    |
++------+-----+
+only showing top 10 rows
+26/10/16 02:27:19 INFO HadoopFSUtils: Listing s3a://data/output/wc with listFiles API
+26/10/16 02:27:19 INFO InMemoryFileIndex: It took 10 ms to list leaf files for 1 paths.
+26/10/16 02:27:19 INFO HadoopFSUtils: Listing s3a://data/output/wc/part-00000-d1514f51-c5ae-411c-ad1d-cf5824aaaf7b-c000.csv with listFiles API
+26/10/16 02:27:19 INFO InMemoryFileIndex: It took 12 ms to list leaf files for 1 paths.
+26/10/16 02:27:19 INFO FileSourceStrategy: Pushed Filters: 
+26/10/16 02:27:19 INFO FileSourceStrategy: Post-Scan Filters: Set((length(trim(value#30, None)) > 0))
+26/10/16 02:27:19 INFO CodeGenerator: Code generated in 12.976875 ms
+26/10/16 02:27:19 INFO MemoryStore: Block broadcast_15 stored as values in memory (estimated size 220.0 KiB, free 433.3 MiB)
+26/10/16 02:27:19 INFO MemoryStore: Block broadcast_15_piece0 stored as bytes in memory (estimated size 39.9 KiB, free 433.3 MiB)
+26/10/16 02:27:19 INFO SparkContext: Created broadcast 15 from csv at NativeMethodAccessorImpl.java:0
+26/10/16 02:27:19 INFO FileSourceScanExec: Planning scan with bin packing, max size: 4194304 bytes, open cost is considered as scanning 4194304 bytes.
+26/10/16 02:27:19 INFO SparkContext: Starting job: csv at NativeMethodAccessorImpl.java:0
+26/10/16 02:27:19 INFO DAGScheduler: Got job 11 (csv at NativeMethodAccessorImpl.java:0) with 1 output partitions
+26/10/16 02:27:19 INFO DAGScheduler: Final stage: ResultStage 20 (csv at NativeMethodAccessorImpl.java:0)
+26/10/16 02:27:19 INFO DAGScheduler: Parents of final stage: List()
+26/10/16 02:27:19 INFO DAGScheduler: Missing parents: List()
+26/10/16 02:27:19 INFO DAGScheduler: Missing parents found for ResultStage 20: List()
+26/10/16 02:27:19 INFO DAGScheduler: Submitting ResultStage 20 (MapPartitionsRDD[42] at csv at NativeMethodAccessorImpl.java:0), which has no missing parents
+26/10/16 02:27:19 INFO MemoryStore: Block broadcast_16 stored as values in memory (estimated size 14.3 KiB, free 433.2 MiB)
+26/10/16 02:27:19 INFO MemoryStore: Block broadcast_16_piece0 stored as bytes in memory (estimated size 6.8 KiB, free 433.2 MiB)
+26/10/16 02:27:19 INFO SparkContext: Created broadcast 16 from broadcast at DAGScheduler.scala:1686
+26/10/16 02:27:19 INFO DAGScheduler: Submitting 1 missing tasks from ResultStage 20 (MapPartitionsRDD[42] at csv at NativeMethodAccessorImpl.java:0) (first 15 tasks are for partitions Vector(0))
+26/10/16 02:27:19 INFO TaskSchedulerImpl: Adding task set 20.0 with 1 tasks resource profile 0
+26/10/16 02:27:19 INFO TaskSetManager: Starting task 0.0 in stage 20.0 (TID 11) (172.22.0.6,executor 0, partition 0, PROCESS_LOCAL, 10275 bytes) 
+26/10/16 02:27:19 INFO TaskSetManager: Finished task 0.0 in stage 20.0 (TID 11) in 46 ms on 172.22.0.6 (executor 0) (1/1)
+26/10/16 02:27:19 INFO TaskSchedulerImpl: Removed TaskSet 20.0 whose tasks have all completed, from pool 
+26/10/16 02:27:19 INFO DAGScheduler: ResultStage 20 (csv at NativeMethodAccessorImpl.java:0) finished in 51 ms
+26/10/16 02:27:19 INFO DAGScheduler: Job 11 is finished. Cancelling potential speculative or zombie tasks for this job
+26/10/16 02:27:19 INFO TaskSchedulerImpl: Canceling stage 20
+26/10/16 02:27:19 INFO TaskSchedulerImpl: Killing all running tasks in stage 20: Stage finished
+26/10/16 02:27:19 INFO DAGScheduler: Job 11 finished: csv at NativeMethodAccessorImpl.java:0, took 53.057708 ms
+26/10/16 02:27:19 INFO CodeGenerator: Code generated in 6.225125 ms
+26/10/16 02:27:19 INFO FileSourceStrategy: Pushed Filters: 
+26/10/16 02:27:19 INFO FileSourceStrategy: Post-Scan Filters: Set()
+26/10/16 02:27:19 INFO MemoryStore: Block broadcast_17 stored as values in memory (estimated size 220.0 KiB, free 433.0 MiB)
+26/10/16 02:27:19 INFO MemoryStore: Block broadcast_17_piece0 stored as bytes in memory (estimated size 39.9 KiB, free 433.0 MiB)
+26/10/16 02:27:19 INFO SparkContext: Created broadcast 17 from csv at NativeMethodAccessorImpl.java:0
+26/10/16 02:27:19 INFO FileSourceScanExec: Planning scan with bin packing, max size: 4194304 bytes, open cost is considered as scanning 4194304 bytes.
+26/10/16 02:27:19 INFO FileSourceStrategy: Pushed Filters: 
+26/10/16 02:27:19 INFO FileSourceStrategy: Post-Scan Filters: Set()
+26/10/16 02:27:19 INFO MemoryStore: Block broadcast_18 stored as values in memory (estimated size 219.9 KiB, free 432.8 MiB)
+26/10/16 02:27:19 INFO MemoryStore: Block broadcast_18_piece0 stored as bytes in memory (estimated size 39.9 KiB, free 432.7 MiB)
+26/10/16 02:27:19 INFO SparkContext: Created broadcast 18 from $anonfun$withThreadLocalCaptured$2 at CompletableFuture.java:1768
+26/10/16 02:27:19 INFO FileSourceScanExec: Planning scan with bin packing, max size: 4194304 bytes, open cost is considered as scanning 4194304 bytes.
+26/10/16 02:27:19 INFO DAGScheduler: Registering RDD 52 ($anonfun$withThreadLocalCaptured$2 at CompletableFuture.java:1768) as input to shuffle 6
+26/10/16 02:27:19 INFO DAGScheduler: Got map stage job 12 ($anonfun$withThreadLocalCaptured$2 at CompletableFuture.java:1768) with 1 output partitions
+26/10/16 02:27:19 INFO DAGScheduler: Final stage: ShuffleMapStage 21 ($anonfun$withThreadLocalCaptured$2 at CompletableFuture.java:1768)
+26/10/16 02:27:19 INFO DAGScheduler: Parents of final stage: List()
+26/10/16 02:27:19 INFO DAGScheduler: Missing parents: List()
+26/10/16 02:27:19 INFO DAGScheduler: Missing parents found for ShuffleMapStage 21: List()
+26/10/16 02:27:19 INFO DAGScheduler: Submitting ShuffleMapStage 21 (MapPartitionsRDD[52] at $anonfun$withThreadLocalCaptured$2 at CompletableFuture.java:1768), which has no missing parents
+26/10/16 02:27:19 INFO MemoryStore: Block broadcast_19 stored as values in memory (estimated size 19.7 KiB, free 432.7 MiB)
+26/10/16 02:27:19 INFO MemoryStore: Block broadcast_19_piece0 stored as bytes in memory (estimated size 9.6 KiB, free 432.7 MiB)
+26/10/16 02:27:19 INFO SparkContext: Created broadcast 19 from broadcast at DAGScheduler.scala:1686
+26/10/16 02:27:19 INFO DAGScheduler: Submitting 1 missing tasks from ShuffleMapStage 21 (MapPartitionsRDD[52] at $anonfun$withThreadLocalCaptured$2 at CompletableFuture.java:1768) (first 15 tasks are for partitions Vector(0))
+26/10/16 02:27:19 INFO TaskSchedulerImpl: Adding task set 21.0 with 1 tasks resource profile 0
+26/10/16 02:27:19 INFO TaskSetManager: Starting task 0.0 in stage 21.0 (TID 12) (172.22.0.6,executor 1, partition 0, PROCESS_LOCAL, 10264 bytes) 
+26/10/16 02:27:19 INFO TaskSetManager: Finished task 0.0 in stage 21.0 (TID 12) in 195 ms on 172.22.0.6 (executor 1) (1/1)
+26/10/16 02:27:19 INFO TaskSchedulerImpl: Removed TaskSet 21.0 whose tasks have all completed, from pool 
+26/10/16 02:27:19 INFO DAGScheduler: ShuffleMapStage 21 ($anonfun$withThreadLocalCaptured$2 at CompletableFuture.java:1768) finished in 204 ms
+26/10/16 02:27:19 INFO DAGScheduler: looking for newly runnable stages
+26/10/16 02:27:19 INFO DAGScheduler: running: HashSet()
+26/10/16 02:27:19 INFO DAGScheduler: waiting: HashSet()
+26/10/16 02:27:19 INFO DAGScheduler: failed: HashSet()
+26/10/16 02:27:20 INFO SparkContext: Starting job: $anonfun$withThreadLocalCaptured$2 at CompletableFuture.java:1768
+26/10/16 02:27:20 INFO DAGScheduler: Got job 13 ($anonfun$withThreadLocalCaptured$2 at CompletableFuture.java:1768) with 1 output partitions
+26/10/16 02:27:20 INFO DAGScheduler: Final stage: ResultStage 23 ($anonfun$withThreadLocalCaptured$2 at CompletableFuture.java:1768)
+26/10/16 02:27:20 INFO DAGScheduler: Parents of final stage: List(ShuffleMapStage 22)
+26/10/16 02:27:20 INFO DAGScheduler: Missing parents: List()
+26/10/16 02:27:20 INFO DAGScheduler: Missing parents found for ResultStage 23: List()
+26/10/16 02:27:20 INFO DAGScheduler: Submitting ResultStage 23 (MapPartitionsRDD[55] at $anonfun$withThreadLocalCaptured$2 at CompletableFuture.java:1768), which has no missing parents
+26/10/16 02:27:20 INFO MemoryStore: Block broadcast_20 stored as values in memory (estimated size 13.8 KiB, free 432.7 MiB)
+26/10/16 02:27:20 INFO MemoryStore: Block broadcast_20_piece0 stored as bytes in memory (estimated size 6.6 KiB, free 432.7 MiB)
+26/10/16 02:27:20 INFO SparkContext: Created broadcast 20 from broadcast at DAGScheduler.scala:1686
+26/10/16 02:27:20 INFO DAGScheduler: Submitting 1 missing tasks from ResultStage 23 (MapPartitionsRDD[55] at $anonfun$withThreadLocalCaptured$2 at CompletableFuture.java:1768) (first 15 tasks are for partitions Vector(0))
+26/10/16 02:27:20 INFO TaskSchedulerImpl: Adding task set 23.0 with 1 tasks resource profile 0
+26/10/16 02:27:20 INFO TaskSetManager: Starting task 0.0 in stage 23.0 (TID 13) (172.22.0.6,executor 0, partition 0, NODE_LOCAL, 9635 bytes) 
+26/10/16 02:27:20 INFO MapOutputTrackerMasterEndpoint: Asked to send map output locations for shuffle 6 to 172.22.0.6:50174
+26/10/16 02:27:20 INFO TaskSetManager: Finished task 0.0 in stage 23.0 (TID 13) in 29 ms on 172.22.0.6 (executor 0) (1/1)
+26/10/16 02:27:20 INFO TaskSchedulerImpl: Removed TaskSet 23.0 whose tasks have all completed, from pool 
+26/10/16 02:27:20 INFO DAGScheduler: ResultStage 23 ($anonfun$withThreadLocalCaptured$2 at CompletableFuture.java:1768) finished in 33 ms
+26/10/16 02:27:20 INFO DAGScheduler: Job 13 is finished. Cancelling potential speculative or zombie tasks for this job
+26/10/16 02:27:20 INFO TaskSchedulerImpl: Canceling stage 23
+26/10/16 02:27:20 INFO TaskSchedulerImpl: Killing all running tasks in stage 23: Stage finished
+26/10/16 02:27:20 INFO DAGScheduler: Job 13 finished: $anonfun$withThreadLocalCaptured$2 at CompletableFuture.java:1768, took 35.483083 ms
+26/10/16 02:27:20 INFO FileSourceStrategy: Pushed Filters: 
+26/10/16 02:27:20 INFO FileSourceStrategy: Post-Scan Filters: Set()
+26/10/16 02:27:20 INFO MemoryStore: Block broadcast_21 stored as values in memory (estimated size 220.0 KiB, free 432.5 MiB)
+26/10/16 02:27:20 INFO MemoryStore: Block broadcast_21_piece0 stored as bytes in memory (estimated size 39.9 KiB, free 432.4 MiB)
+26/10/16 02:27:20 INFO SparkContext: Created broadcast 21 from $anonfun$withThreadLocalCaptured$2 at CompletableFuture.java:1768
+26/10/16 02:27:20 INFO FileSourceScanExec: Planning scan with bin packing, max size: 4194304 bytes, open cost is considered as scanning 4194304 bytes.
+26/10/16 02:27:20 INFO DAGScheduler: Registering RDD 59 ($anonfun$withThreadLocalCaptured$2 at CompletableFuture.java:1768) as input to shuffle 7
+26/10/16 02:27:20 INFO DAGScheduler: Got map stage job 14 ($anonfun$withThreadLocalCaptured$2 at CompletableFuture.java:1768) with 1 output partitions
+26/10/16 02:27:20 INFO DAGScheduler: Final stage: ShuffleMapStage 24 ($anonfun$withThreadLocalCaptured$2 at CompletableFuture.java:1768)
+26/10/16 02:27:20 INFO DAGScheduler: Parents of final stage: List()
+26/10/16 02:27:20 INFO DAGScheduler: Missing parents: List()
+26/10/16 02:27:20 INFO DAGScheduler: Missing parents found for ShuffleMapStage 24: List()
+26/10/16 02:27:20 INFO DAGScheduler: Submitting ShuffleMapStage 24 (MapPartitionsRDD[59] at $anonfun$withThreadLocalCaptured$2 at CompletableFuture.java:1768), which has no missing parents
+26/10/16 02:27:20 INFO MemoryStore: Block broadcast_22 stored as values in memory (estimated size 33.5 KiB, free 432.4 MiB)
+26/10/16 02:27:20 INFO MemoryStore: Block broadcast_22_piece0 stored as bytes in memory (estimated size 14.7 KiB, free 432.4 MiB)
+26/10/16 02:27:20 INFO SparkContext: Created broadcast 22 from broadcast at DAGScheduler.scala:1686
+26/10/16 02:27:20 INFO DAGScheduler: Submitting 1 missing tasks from ShuffleMapStage 24 (MapPartitionsRDD[59] at $anonfun$withThreadLocalCaptured$2 at CompletableFuture.java:1768) (first 15 tasks are for partitions Vector(0))
+26/10/16 02:27:20 INFO TaskSchedulerImpl: Adding task set 24.0 with 1 tasks resource profile 0
+26/10/16 02:27:20 INFO TaskSetManager: Starting task 0.0 in stage 24.0 (TID 14) (172.22.0.6,executor 1, partition 0, PROCESS_LOCAL, 10214 bytes) 
+26/10/16 02:27:22 INFO TaskSetManager: Finished task 0.0 in stage 24.0 (TID 14) in 2042 ms on 172.22.0.6 (executor 1) (1/1)
+26/10/16 02:27:22 INFO TaskSchedulerImpl: Removed TaskSet 24.0 whose tasks have all completed, from pool 
+26/10/16 02:27:22 INFO DAGScheduler: ShuffleMapStage 24 ($anonfun$withThreadLocalCaptured$2 at CompletableFuture.java:1768) finished in 2048 ms
+26/10/16 02:27:22 INFO DAGScheduler: looking for newly runnable stages
+26/10/16 02:27:22 INFO DAGScheduler: running: HashSet()
+26/10/16 02:27:22 INFO DAGScheduler: waiting: HashSet()
+26/10/16 02:27:22 INFO DAGScheduler: failed: HashSet()
+26/10/16 02:27:22 INFO ShufflePartitionsUtil: For shuffle(7, advisory target size: 67108864, actual target size 1048576, minimum partition size: 1048576
+26/10/16 02:27:22 INFO DAGScheduler: Registering RDD 62 ($anonfun$withThreadLocalCaptured$2 at CompletableFuture.java:1768) as input to shuffle 8
+26/10/16 02:27:22 INFO DAGScheduler: Got map stage job 15 ($anonfun$withThreadLocalCaptured$2 at CompletableFuture.java:1768) with 1 output partitions
+26/10/16 02:27:22 INFO DAGScheduler: Final stage: ShuffleMapStage 26 ($anonfun$withThreadLocalCaptured$2 at CompletableFuture.java:1768)
+26/10/16 02:27:22 INFO DAGScheduler: Parents of final stage: List(ShuffleMapStage 25)
+26/10/16 02:27:22 INFO DAGScheduler: Missing parents: List()
+26/10/16 02:27:22 INFO DAGScheduler: Missing parents found for ShuffleMapStage 26: List()
+26/10/16 02:27:22 INFO DAGScheduler: Submitting ShuffleMapStage 26 (MapPartitionsRDD[62] at $anonfun$withThreadLocalCaptured$2 at CompletableFuture.java:1768), which has no missing parents
+26/10/16 02:27:22 INFO MemoryStore: Block broadcast_23 stored as values in memory (estimated size 44.1 KiB, free 432.3 MiB)
+26/10/16 02:27:22 INFO MemoryStore: Block broadcast_23_piece0 stored as bytes in memory (estimated size 19.4 KiB, free 432.3 MiB)
+26/10/16 02:27:22 INFO SparkContext: Created broadcast 23 from broadcast at DAGScheduler.scala:1686
+26/10/16 02:27:22 INFO DAGScheduler: Submitting 1 missing tasks from ShuffleMapStage 26 (MapPartitionsRDD[62] at $anonfun$withThreadLocalCaptured$2 at CompletableFuture.java:1768) (first 15 tasks are for partitions Vector(0))
+26/10/16 02:27:22 INFO TaskSchedulerImpl: Adding task set 26.0 with 1 tasks resource profile 0
+26/10/16 02:27:22 INFO TaskSetManager: Starting task 0.0 in stage 26.0 (TID 15) (172.22.0.6,executor 1, partition 0, NODE_LOCAL, 9624 bytes) 
+26/10/16 02:27:22 INFO MapOutputTrackerMasterEndpoint: Asked to send map output locations for shuffle 7 to 172.22.0.6:50190
+26/10/16 02:27:22 INFO TaskSetManager: Finished task 0.0 in stage 26.0 (TID 15) in 60 ms on 172.22.0.6 (executor 1) (1/1)
+26/10/16 02:27:22 INFO TaskSchedulerImpl: Removed TaskSet 26.0 whose tasks have all completed, from pool 
+26/10/16 02:27:22 INFO DAGScheduler: ShuffleMapStage 26 ($anonfun$withThreadLocalCaptured$2 at CompletableFuture.java:1768) finished in 80 ms
+26/10/16 02:27:22 INFO DAGScheduler: looking for newly runnable stages
+26/10/16 02:27:22 INFO DAGScheduler: running: HashSet()
+26/10/16 02:27:22 INFO DAGScheduler: waiting: HashSet()
+26/10/16 02:27:22 INFO DAGScheduler: failed: HashSet()
+26/10/16 02:27:22 INFO SparkContext: Starting job: $anonfun$withThreadLocalCaptured$2 at CompletableFuture.java:1768
+26/10/16 02:27:22 INFO DAGScheduler: Got job 16 ($anonfun$withThreadLocalCaptured$2 at CompletableFuture.java:1768) with 1 output partitions
+26/10/16 02:27:22 INFO DAGScheduler: Final stage: ResultStage 29 ($anonfun$withThreadLocalCaptured$2 at CompletableFuture.java:1768)
+26/10/16 02:27:22 INFO DAGScheduler: Parents of final stage: List(ShuffleMapStage 28)
+26/10/16 02:27:22 INFO DAGScheduler: Missing parents: List()
+26/10/16 02:27:22 INFO DAGScheduler: Missing parents found for ResultStage 29: List()
+26/10/16 02:27:22 INFO DAGScheduler: Submitting ResultStage 29 (MapPartitionsRDD[65] at $anonfun$withThreadLocalCaptured$2 at CompletableFuture.java:1768), which has no missing parents
+26/10/16 02:27:22 INFO MemoryStore: Block broadcast_24 stored as values in memory (estimated size 13.8 KiB, free 433.8 MiB)
+26/10/16 02:27:22 INFO MemoryStore: Block broadcast_24_piece0 stored as bytes in memory (estimated size 6.6 KiB, free 433.8 MiB)
+26/10/16 02:27:22 INFO SparkContext: Created broadcast 24 from broadcast at DAGScheduler.scala:1686
+26/10/16 02:27:22 INFO DAGScheduler: Submitting 1 missing tasks from ResultStage 29 (MapPartitionsRDD[65] at $anonfun$withThreadLocalCaptured$2 at CompletableFuture.java:1768) (first 15 tasks are for partitions Vector(0))
+26/10/16 02:27:22 INFO TaskSchedulerImpl: Adding task set 29.0 with 1 tasks resource profile 0
+26/10/16 02:27:22 INFO TaskSetManager: Starting task 0.0 in stage 29.0 (TID 16) (172.22.0.6,executor 1, partition 0, NODE_LOCAL, 9635 bytes) 
+26/10/16 02:27:22 INFO MapOutputTrackerMasterEndpoint: Asked to send map output locations for shuffle 8 to 172.22.0.6:50190
+26/10/16 02:27:22 INFO TaskSetManager: Finished task 0.0 in stage 29.0 (TID 16) in 19 ms on 172.22.0.6 (executor 1) (1/1)
+26/10/16 02:27:22 INFO TaskSchedulerImpl: Removed TaskSet 29.0 whose tasks have all completed, from pool 
+26/10/16 02:27:22 INFO DAGScheduler: ResultStage 29 ($anonfun$withThreadLocalCaptured$2 at CompletableFuture.java:1768) finished in 22 ms
+26/10/16 02:27:22 INFO DAGScheduler: Job 16 is finished. Cancelling potential speculative or zombie tasks for this job
+26/10/16 02:27:22 INFO TaskSchedulerImpl: Canceling stage 29
+26/10/16 02:27:22 INFO TaskSchedulerImpl: Killing all running tasks in stage 29: Stage finished
+26/10/16 02:27:22 INFO DAGScheduler: Job 16 finished: $anonfun$withThreadLocalCaptured$2 at CompletableFuture.java:1768, took 24.215916 ms
+WORDCOUNT OK
+26/10/16 02:27:22 INFO SparkContext: SparkContext is stopping with exitCode 0 from stop at NativeMethodAccessorImpl.java:0.
+26/10/16 02:27:22 INFO SparkUI: Stopped Spark web UI at http://kyuubi:4040
+26/10/16 02:27:22 INFO StandaloneSchedulerBackend: Shutting down all executors
+26/10/16 02:27:22 INFO StandaloneSchedulerBackend$StandaloneDriverEndpoint: Asking each executor to shut down
+26/10/16 02:27:22 INFO MapOutputTrackerMasterEndpoint: MapOutputTrackerMasterEndpoint stopped!
+26/10/16 02:27:22 INFO MemoryStore: MemoryStore cleared
+26/10/16 02:27:22 INFO BlockManager: BlockManager stopped
+26/10/16 02:27:22 INFO BlockManagerMaster: BlockManagerMaster stopped
+26/10/16 02:27:22 INFO OutputCommitCoordinator$OutputCommitCoordinatorEndpoint: OutputCommitCoordinator stopped!
+26/10/16 02:27:22 INFO SparkContext: Successfully stopped SparkContext (Uptime: 18046 ms)
+
+
+
+
+
+
+
+^Z
+zsh: suspended  python kyuubi_submit.py --url http://localhost:10099 submit  --remote --  
+((.venv) ) (base) welcome@jaisairams-Laptop spark-kyuubi-lab % 
+((.venv) ) (base) welcome@jaisairams-Laptop spark-kyuubi-lab % python kyuubi_submit.py --url http://localhost:10099 \
+  submit s3a://jobs/python/02_wordcount_s3.py --remote \
+  -- s3a://data/input/sample.txt s3a://data/output/wc
+Submitted batch f882f0d5-e6c0-457e-8c58-235ce5964d5b (state=PENDING)
+2026-10-16 02:34:21.970 INFO KyuubiRestFrontendService-49 org.apache.kyuubi.operation.OperationAuditLogger: operation=582c75b9-846a-4fc6-b319-8611d4f49519	opType=BatchJobSubmission	state=PENDING	user=anonymous	session=f882f0d5-e6c0-457e-8c58-235ce5964d5b
+2026-10-16 02:34:21.984 INFO KyuubiSessionManager-exec-pool: Thread-112 org.apache.kyuubi.engine.ProcBuilder: Logging to /opt/kyuubi/work/anonymous/kyuubi-spark-batch-submit.log.1
+2026-10-16 02:34:21.986 INFO KyuubiSessionManager-exec-pool: Thread-112 org.apache.kyuubi.operation.BatchJobSubmission: Submitting SPARK batch[f882f0d5-e6c0-457e-8c58-235ce5964d5b] job:
+/opt/spark/bin/spark-submit \
+	--class org.apache.spark.deploy.PythonRunner \
+	--conf spark.kyuubi.batch.id=f882f0d5-e6c0-457e-8c58-235ce5964d5b \
+	--conf spark.kyuubi.batch.resource.uploaded=false \
+	--conf spark.kyuubi.client.ipAddress=192.168.65.1 \
+	--conf spark.kyuubi.engine.engineLog.path=/opt/kyuubi/work/anonymous/kyuubi-spark-batch-submit.log.1 \
+	--conf spark.kyuubi.server.ipAddress=0.0.0.0 \
+	--conf spark.kyuubi.session.connection.url=0.0.0.0:10099 \
+	--conf spark.kyuubi.session.real.user=anonymous \
+	--conf spark.app.name=02_wordcount_s3 \
+	--conf spark.driver.bindAddress=0.0.0.0 \
+	--conf spark.driver.host=kyuubi \
+	--conf spark.kubernetes.driver.label.kyuubi-unique-tag=f882f0d5-e6c0-457e-8c58-235ce5964d5b \
+	--conf spark.master=spark://spark-master:7077 \
+	--conf spark.submit.deployMode=client \
+	--conf spark.yarn.tags=KYUUBI,f882f0d5-e6c0-457e-8c58-235ce5964d5b \
+	--proxy-user anonymous s3a://jobs/python/02_wordcount_s3.py s3a://data/input/sample.txt s3a://data/output/wc
+^Z
+zsh: suspended  python kyuubi_submit.py --url http://localhost:10099 submit  --remote --  
+((.venv) ) (base) welcome@jaisairams-Laptop spark-kyuubi-lab % make jars 
+docker compose --profile tools run --rm jar-builder
+[+] Creating 1/0
+ ✔ Volume "spark-kyuubi-lab_m2-cache"  Created                                                                                                                       0.0s 
+[+] Running 11/11
+ ✔ jar-builder 10 layers [⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿]      0B/0B      Pulled                                                                                                        14.4s 
+   ✔ 8a38824eedc5 Pull complete                                                                                                                                      4.3s 
+   ✔ edd6ec6656ab Pull complete                                                                                                                                      3.0s 
+   ✔ 11c0c2c7dc0d Pull complete                                                                                                                                      8.7s 
+   ✔ fa6832a42b42 Pull complete                                                                                                                                      3.6s 
+   ✔ ee61ff9b7b5f Pull complete                                                                                                                                      4.2s 
+   ✔ b515ec74f4e6 Pull complete                                                                                                                                      9.5s 
+   ✔ bb3a0f99eabb Pull complete                                                                                                                                      8.8s 
+   ✔ cf3094dd7556 Pull complete                                                                                                                                      9.0s 
+   ✔ dac6aecb3780 Pull complete                                                                                                                                      9.2s 
+   ✔ cb363c1a2bf0 Pull complete                                                                                                                                      9.3s 
+warning: 4 deprecations (since 2.12.0)
+warning: 1 deprecation (since 2.12.5)
+warning: 2 deprecations (since 2.12.9)
+warning: 2 deprecations (since 2.13)
+warning: 8 deprecations (since 2.13.0)
+warning: 1 deprecation (since 2.13.12)
+warning: 1 deprecation (since 2.13.4)
+warning: 19 deprecations in total; re-run with -deprecation for details
+warning: 2 feature warnings; re-run with -feature for details
+9 warnings
+total 8
+-rw-r--r-- 1 root root 7750 Oct 16 02:35 spark-kyuubi-jobs.jar
+((.venv) ) (base) welcome@jaisairams-Laptop spark-kyuubi-lab % make upload
+docker compose run --rm storage-init
+[+] Creating 2/0
+ ✔ Container spark-kyuubi-lab-rustfs-perms-1  Created                                                                                                                0.0s 
+ ✔ Container spark-kyuubi-lab-rustfs-1        Running                                                                                                                0.0s 
+[+] Running 1/1
+ ✔ Container spark-kyuubi-lab-rustfs-perms-1  Exited                                                                                                                 0.2s 
+>> waiting for RustFS at http://rustfs:9000
+>> bucket jobs exists
+>> bucket data exists
+>> bucket warehouse exists
+>> bucket spark-logs exists
+>> uploading jobs/python -> s3://jobs/python/
+>> uploading jobs/jars -> s3://jobs/jars/
+upload: ../seed/jobs/jars/spark-kyuubi-jobs.jar to s3://jobs/jars/spark-kyuubi-jobs.jar
+>> uploading data -> s3://data/input/
+---- s3://jobs ----
+2026-10-16 02:37:11       7750 jars/spark-kyuubi-jobs.jar
+2026-10-16 02:15:33       1217 python/01_smoke_test.py
+2026-10-16 02:15:33       1338 python/02_wordcount_s3.py
+2026-10-16 02:15:33       2103 python/03_hive_etl.py
+2026-10-16 02:15:33       1384 python/04_pyfiles_demo.py
+2026-10-16 02:15:33        483 python/05_expected_failure.py
+2026-10-16 02:15:33       1016 python/06_conf_and_args.py
+2026-10-16 02:15:33        685 python/libs/text_utils.py
+2026-10-16 02:15:33        545 python/libs/text_utils.zip
+---- s3://data/input ----
+2026-10-16 02:15:34       4540 input/orders.csv
+2026-10-16 02:15:34       1214 input/sample.txt
+>> storage ready
+((.venv) ) (base) welcome@jaisairams-Laptop spark-kyuubi-lab % 
+((.venv) ) (base) welcome@jaisairams-Laptop spark-kyuubi-lab % 
+((.venv) ) (base) welcome@jaisairams-Laptop spark-kyuubi-lab % python kyuubi_submit.py --url http://localhost:10099 \
+  submit s3a://jobs/python/03_hive_etl.py --remote \
+  --name test-py-hive-etl \
+  -- s3a://data/input/orders.csv
+Submitted batch fd5ea8d5-8cfd-421a-af83-bebae83137f3 (state=PENDING)
+2026-10-16 02:44:44.570 INFO KyuubiRestFrontendService-98 org.apache.kyuubi.operation.OperationAuditLogger: operation=320a130f-dd53-44b3-987b-ae1874da48e5	opType=BatchJobSubmission	state=PENDING	user=anonymous	session=fd5ea8d5-8cfd-421a-af83-bebae83137f3
+2026-10-16 02:44:44.580 INFO KyuubiSessionManager-exec-pool: Thread-133 org.apache.kyuubi.engine.ProcBuilder: Logging to /opt/kyuubi/work/anonymous/kyuubi-spark-batch-submit.log.2
+2026-10-16 02:44:44.582 INFO KyuubiSessionManager-exec-pool: Thread-133 org.apache.kyuubi.operation.BatchJobSubmission: Submitting SPARK batch[fd5ea8d5-8cfd-421a-af83-bebae83137f3] job:
+/opt/spark/bin/spark-submit \
+	--class org.apache.spark.deploy.PythonRunner \
+	--conf spark.kyuubi.batch.id=fd5ea8d5-8cfd-421a-af83-bebae83137f3 \
+	--conf spark.kyuubi.batch.resource.uploaded=false \
+	--conf spark.kyuubi.client.ipAddress=192.168.65.1 \
+	--conf spark.kyuubi.engine.engineLog.path=/opt/kyuubi/work/anonymous/kyuubi-spark-batch-submit.log.2 \
+	--conf spark.kyuubi.server.ipAddress=0.0.0.0 \
+	--conf spark.kyuubi.session.connection.url=0.0.0.0:10099 \
+	--conf spark.kyuubi.session.real.user=anonymous \
+	--conf spark.app.name=test-py-hive-etl \
+	--conf spark.driver.bindAddress=0.0.0.0 \
+	--conf spark.driver.host=kyuubi \
+	--conf spark.kubernetes.driver.label.kyuubi-unique-tag=fd5ea8d5-8cfd-421a-af83-bebae83137f3 \
+	--conf spark.master=spark://spark-master:7077 \
+	--conf spark.submit.deployMode=client \
+	--conf spark.yarn.tags=KYUUBI,fd5ea8d5-8cfd-421a-af83-bebae83137f3 \
+	--proxy-user anonymous s3a://jobs/python/03_hive_etl.py s3a://data/input/orders.csv
+WARNING: Using incubator modules: jdk.incubator.vector
+26/10/16 02:44:46 WARN NativeCodeLoader: Unable to load native-hadoop library for your platform... using builtin-java classes where applicable
+SLF4J: Failed to load class "org.slf4j.impl.StaticLoggerBinder".
+SLF4J: Defaulting to no-operation (NOP) logger implementation
+SLF4J: See http://www.slf4j.org/codes.html#StaticLoggerBinder for further details.
+Using Spark's default log4j profile: org/apache/spark/log4j2-defaults.properties
+26/10/16 02:44:48 INFO SparkContext: Running Spark version 4.1.3
+26/10/16 02:44:48 INFO SparkContext: OS info Linux, 6.5.11-linuxkit, aarch64
+26/10/16 02:44:48 INFO SparkContext: Java version 17.0.19+10
+26/10/16 02:44:48 INFO ResourceUtils: ==============================================================
+26/10/16 02:44:48 INFO ResourceUtils: No custom resources configured for spark.driver.
+26/10/16 02:44:48 INFO ResourceUtils: ==============================================================
+26/10/16 02:44:48 INFO SparkContext: Submitted application: 03-hive-etl
+26/10/16 02:44:48 INFO SecurityManager: Changing view acls to: spark,anonymous
+26/10/16 02:44:48 INFO SecurityManager: Changing modify acls to: spark,anonymous
+26/10/16 02:44:48 INFO SecurityManager: Changing view acls groups to: spark,anonymous
+26/10/16 02:44:48 INFO SecurityManager: Changing modify acls groups to: spark,anonymous
+26/10/16 02:44:48 INFO SecurityManager: SecurityManager: authentication disabled; ui acls disabled; users with view permissions: spark, anonymous groups with view permissions: EMPTY; users with modify permissions: spark, anonymous; groups with modify permissions: EMPTY; RPC SSL disabled
+26/10/16 02:44:48 INFO Utils: Successfully started service 'sparkDriver' on port 36315.
+26/10/16 02:44:48 INFO SparkEnv: Registering MapOutputTracker
+26/10/16 02:44:48 INFO SparkEnv: Registering BlockManagerMaster
+26/10/16 02:44:48 INFO BlockManagerMasterEndpoint: Using org.apache.spark.storage.DefaultTopologyMapper for getting topology information
+26/10/16 02:44:48 INFO BlockManagerMasterEndpoint: BlockManagerMasterEndpoint up
+26/10/16 02:44:48 INFO SparkEnv: Registering BlockManagerMasterHeartbeat
+26/10/16 02:44:48 INFO DiskBlockManager: Created local directory at /tmp/blockmgr-d650e790-16b1-405c-bf3c-0ac0ab7aa687
+26/10/16 02:44:48 INFO SparkEnv: Registering OutputCommitCoordinator
+26/10/16 02:44:48 INFO JettyUtils: Start Jetty 0.0.0.0:4040 for SparkUI
+26/10/16 02:44:48 INFO Utils: Successfully started service 'SparkUI' on port 4040.
+26/10/16 02:44:48 INFO ResourceProfile: Default ResourceProfile created, executor resources: Map(cores -> name: cores, amount: 1, script: , vendor: , memory -> name: memory, amount: 1024, script: , vendor: , offHeap -> name: offHeap, amount: 0, script: , vendor: ), task resources: Map(cpus -> name: cpus, amount: 1.0)
+26/10/16 02:44:48 INFO ResourceProfile: Limiting resource is cpus at 1 tasks per executor
+26/10/16 02:44:48 INFO ResourceProfileManager: Added ResourceProfile id: 0
+26/10/16 02:44:48 INFO SecurityManager: Changing view acls to: spark,anonymous
+26/10/16 02:44:48 INFO SecurityManager: Changing modify acls to: spark,anonymous
+26/10/16 02:44:48 INFO SecurityManager: Changing view acls groups to: spark,anonymous
+26/10/16 02:44:48 INFO SecurityManager: Changing modify acls groups to: spark,anonymous
+26/10/16 02:44:48 INFO SecurityManager: SecurityManager: authentication disabled; ui acls disabled; users with view permissions: spark, anonymous groups with view permissions: EMPTY; users with modify permissions: spark, anonymous; groups with modify permissions: EMPTY; RPC SSL disabled
+26/10/16 02:44:48 INFO StandaloneAppClient$ClientEndpoint: Connecting to master spark://spark-master:7077...
+26/10/16 02:44:48 INFO TransportClientFactory: Successfully created connection to spark-master/172.22.0.4:7077 after 18 ms (0 ms spent in bootstraps)
+26/10/16 02:44:48 INFO StandaloneSchedulerBackend: Connected to Spark cluster with app ID app-20261016024448-0002
+26/10/16 02:44:48 INFO Utils: Successfully started service 'org.apache.spark.network.netty.NettyBlockTransferService' on port 34865.
+26/10/16 02:44:48 INFO NettyBlockTransferService: Server created on kyuubi 0.0.0.0:34865
+26/10/16 02:44:48 INFO BlockManager: Using org.apache.spark.storage.RandomBlockReplicationPolicy for block replication policy
+26/10/16 02:44:48 INFO StandaloneAppClient$ClientEndpoint: Executor added: app-20261016024448-0002/0 on worker-20261016022117-172.22.0.6-34991 (172.22.0.6:34991) with 1 core(s)
+26/10/16 02:44:48 INFO StandaloneSchedulerBackend: Granted executor ID app-20261016024448-0002/0 on hostPort 172.22.0.6:34991 with 1 core(s), 1024.0 MiB RAM
+26/10/16 02:44:48 INFO BlockManagerMaster: Registering BlockManager BlockManagerId(driver, kyuubi, 34865, None)
+26/10/16 02:44:48 INFO StandaloneAppClient$ClientEndpoint: Executor added: app-20261016024448-0002/1 on worker-20261016022117-172.22.0.6-34991 (172.22.0.6:34991) with 1 core(s)
+26/10/16 02:44:48 INFO StandaloneSchedulerBackend: Granted executor ID app-20261016024448-0002/1 on hostPort 172.22.0.6:34991 with 1 core(s), 1024.0 MiB RAM
+26/10/16 02:44:48 INFO BlockManagerMasterEndpoint: Registering block manager kyuubi:34865 with 434.4 MiB RAM, BlockManagerId(driver, kyuubi, 34865, None)
+26/10/16 02:44:48 INFO BlockManagerMaster: Registered BlockManager BlockManagerId(driver, kyuubi, 34865, None)
+26/10/16 02:44:48 INFO BlockManager: Initialized BlockManager: BlockManagerId(driver, kyuubi, 34865, None)
+26/10/16 02:44:48 INFO StandaloneAppClient$ClientEndpoint: Executor updated: app-20261016024448-0002/0 is now RUNNING
+26/10/16 02:44:48 INFO StandaloneAppClient$ClientEndpoint: Executor updated: app-20261016024448-0002/1 is now RUNNING
+26/10/16 02:44:49 INFO RollingEventLogFilesWriter: Logging events to s3a://spark-logs/events/eventlog_v2_app-20261016024448-0002/events_1_app-20261016024448-0002.zstd
+26/10/16 02:44:49 INFO StandaloneSchedulerBackend: SchedulerBackend is ready for scheduling beginning after reached minRegisteredResourcesRatio: 0.0
+26/10/16 02:44:51 INFO StandaloneSchedulerBackend$StandaloneDriverEndpoint: Registered executor NettyRpcEndpointRef(spark-client://Executor) (172.22.0.6:49030) with ID 1, ResourceProfileId 0
+26/10/16 02:44:51 INFO SharedState: Setting hive.metastore.warehouse.dir ('null') to the value of spark.sql.warehouse.dir.
+26/10/16 02:44:51 INFO SharedState: Warehouse path is 's3a://warehouse/'.
+26/10/16 02:44:51 INFO BlockManagerMasterEndpoint: Registering block manager 172.22.0.6:36099 with 434.4 MiB RAM, BlockManagerId(1, 172.22.0.6, 36099, None)
+26/10/16 02:44:51 INFO StandaloneSchedulerBackend$StandaloneDriverEndpoint: Registered executor NettyRpcEndpointRef(spark-client://Executor) (172.22.0.6:49042) with ID 0, ResourceProfileId 0
+26/10/16 02:44:51 INFO BlockManagerMasterEndpoint: Registering block manager 172.22.0.6:45023 with 434.4 MiB RAM, BlockManagerId(0, 172.22.0.6, 45023, None)
+26/10/16 02:44:51 INFO HadoopFSUtils: Listing s3a://data/input/orders.csv with listFiles API
+26/10/16 02:44:51 INFO InMemoryFileIndex: It took 34 ms to list leaf files for 1 paths.
+26/10/16 02:44:52 INFO HiveUtils: Initializing HiveMetastoreConnection version 2.3.10 using Spark classes.
+26/10/16 02:44:52 INFO HiveConf: Found configuration file null
+26/10/16 02:44:52 INFO HiveClientImpl: Warehouse location for Hive client (version 2.3.10) is s3a://warehouse/
+26/10/16 02:44:52 INFO metastore: Trying to connect to metastore with URI thrift://hive-metastore:9083
+26/10/16 02:44:52 INFO metastore: Opened a connection to metastore, current connections: 1
+26/10/16 02:44:53 INFO metastore: Connected to metastore.
+26/10/16 02:44:56 INFO FileSourceStrategy: Pushed Filters: 
+26/10/16 02:44:56 INFO FileSourceStrategy: Post-Scan Filters: Set()
+26/10/16 02:44:56 INFO ParquetUtils: Using default output committer for Parquet: org.apache.parquet.hadoop.ParquetOutputCommitter
+26/10/16 02:44:56 INFO FileOutputCommitter: File Output Committer Algorithm version is 1
+26/10/16 02:44:56 INFO FileOutputCommitter: FileOutputCommitter skip cleanup _temporary folders under output directory:false, ignore cleanup failures: false
+26/10/16 02:44:56 INFO SQLHadoopMapReduceCommitProtocol: Using user defined output committer class org.apache.parquet.hadoop.ParquetOutputCommitter
+26/10/16 02:44:56 INFO FileOutputCommitter: File Output Committer Algorithm version is 1
+26/10/16 02:44:56 INFO FileOutputCommitter: FileOutputCommitter skip cleanup _temporary folders under output directory:false, ignore cleanup failures: false
+26/10/16 02:44:56 INFO SQLHadoopMapReduceCommitProtocol: Using output committer class org.apache.parquet.hadoop.ParquetOutputCommitter
+26/10/16 02:44:56 INFO CodeGenerator: Code generated in 194.418834 ms
+26/10/16 02:44:56 INFO MemoryStore: MemoryStore started with capacity 434.4 MiB
+26/10/16 02:44:56 INFO MemoryStore: Block broadcast_0 stored as values in memory (estimated size 219.9 KiB, free 434.2 MiB)
+26/10/16 02:44:56 INFO MemoryStore: Block broadcast_0_piece0 stored as bytes in memory (estimated size 39.9 KiB, free 434.1 MiB)
+26/10/16 02:44:56 INFO SparkContext: Created broadcast 0 from saveAsTable at NativeMethodAccessorImpl.java:0
+26/10/16 02:44:56 INFO FileSourceScanExec: Planning scan with bin packing, max size: 4194304 bytes, open cost is considered as scanning 4194304 bytes.
+26/10/16 02:44:57 INFO SparkContext: Starting job: saveAsTable at NativeMethodAccessorImpl.java:0
+26/10/16 02:44:57 INFO DAGScheduler: Got job 0 (saveAsTable at NativeMethodAccessorImpl.java:0) with 1 output partitions
+26/10/16 02:44:57 INFO DAGScheduler: Final stage: ResultStage 0 (saveAsTable at NativeMethodAccessorImpl.java:0)
+26/10/16 02:44:57 INFO DAGScheduler: Parents of final stage: List()
+26/10/16 02:44:57 INFO DAGScheduler: Missing parents: List()
+26/10/16 02:44:57 INFO DAGScheduler: Missing parents found for ResultStage 0: List()
+26/10/16 02:44:57 INFO DAGScheduler: Submitting ResultStage 0 (MapPartitionsRDD[3] at saveAsTable at NativeMethodAccessorImpl.java:0), which has no missing parents
+26/10/16 02:44:57 INFO MemoryStore: Block broadcast_1 stored as values in memory (estimated size 249.1 KiB, free 433.9 MiB)
+26/10/16 02:44:57 INFO MemoryStore: Block broadcast_1_piece0 stored as bytes in memory (estimated size 90.7 KiB, free 433.8 MiB)
+26/10/16 02:44:57 INFO SparkContext: Created broadcast 1 from broadcast at DAGScheduler.scala:1686
+26/10/16 02:44:57 INFO DAGScheduler: Submitting 1 missing tasks from ResultStage 0 (MapPartitionsRDD[3] at saveAsTable at NativeMethodAccessorImpl.java:0) (first 15 tasks are for partitions Vector(0))
+26/10/16 02:44:57 INFO TaskSchedulerImpl: Adding task set 0.0 with 1 tasks resource profile 0
+26/10/16 02:44:57 INFO TaskSetManager: Starting task 0.0 in stage 0.0 (TID 0) (172.22.0.6,executor 1, partition 0, PROCESS_LOCAL, 10225 bytes) 
+26/10/16 02:44:59 INFO TaskSetManager: Finished task 0.0 in stage 0.0 (TID 0) in 2298 ms on 172.22.0.6 (executor 1) (1/1)
+26/10/16 02:44:59 INFO TaskSchedulerImpl: Removed TaskSet 0.0 whose tasks have all completed, from pool 
+26/10/16 02:44:59 INFO DAGScheduler: ResultStage 0 (saveAsTable at NativeMethodAccessorImpl.java:0) finished in 2395 ms
+26/10/16 02:44:59 INFO DAGScheduler: Job 0 is finished. Cancelling potential speculative or zombie tasks for this job
+26/10/16 02:44:59 INFO TaskSchedulerImpl: Canceling stage 0
+26/10/16 02:44:59 INFO TaskSchedulerImpl: Killing all running tasks in stage 0: Stage finished
+26/10/16 02:44:59 INFO DAGScheduler: Job 0 finished: saveAsTable at NativeMethodAccessorImpl.java:0, took 2416.527334 ms
+26/10/16 02:44:59 INFO FileFormatWriter: Start to commit write Job a70e9892-dd88-48ca-813c-9f158dbc1cd1.
+26/10/16 02:44:59 INFO FileFormatWriter: Write Job a70e9892-dd88-48ca-813c-9f158dbc1cd1 committed. Elapsed time: 155 ms.
+26/10/16 02:44:59 INFO FileFormatWriter: Finished processing stats for write job a70e9892-dd88-48ca-813c-9f158dbc1cd1.
+26/10/16 02:44:59 INFO HadoopFSUtils: Listing s3a://warehouse/demo.db/orders with listFiles API
+26/10/16 02:44:59 INFO InMemoryFileIndex: It took 5 ms to list leaf files for 1 paths.
+26/10/16 02:44:59 INFO HiveExternalCatalog: Persisting file based data source table `spark_catalog`.`demo`.`orders` into Hive metastore in Hive compatible format.
+26/10/16 02:44:59 INFO SQLStdHiveAccessController: Created SQLStdHiveAccessController for session context : HiveAuthzSessionContext [sessionString=e5e31c89-98ea-451c-be3b-275a6b5a1e2b, clientType=HIVECLI]
+26/10/16 02:44:59 WARN SessionState: METASTORE_FILTER_HOOK will be ignored, since hive.security.authorization.manager is set to instance of HiveAuthorizerFactory.
+26/10/16 02:44:59 INFO metastore: Mestastore configuration hive.metastore.filter.hook changed from org.apache.hadoop.hive.metastore.DefaultMetaStoreFilterHookImpl to org.apache.hadoop.hive.ql.security.authorization.plugin.AuthorizationMetaStoreFilterHook
+26/10/16 02:44:59 INFO metastore: Closed a connection to metastore, current connections: 0
+26/10/16 02:44:59 INFO metastore: Trying to connect to metastore with URI thrift://hive-metastore:9083
+26/10/16 02:44:59 INFO metastore: Opened a connection to metastore, current connections: 1
+26/10/16 02:44:59 INFO metastore: Connected to metastore.
+26/10/16 02:44:59 INFO metastore: Trying to connect to metastore with URI thrift://hive-metastore:9083
+26/10/16 02:44:59 INFO metastore: Opened a connection to metastore, current connections: 2
+26/10/16 02:44:59 INFO metastore: Connected to metastore.
+26/10/16 02:45:00 INFO CodeGenerator: Code generated in 5.650292 ms
+Databases: ['default', 'demo']
+26/10/16 02:45:00 INFO CodeGenerator: Code generated in 21.12 ms
+26/10/16 02:45:00 INFO CodeGenerator: Code generated in 5.081209 ms
+Tables in demo: ['orders']
+26/10/16 02:45:01 INFO CodeGenerator: Code generated in 4.656083 ms
+26/10/16 02:45:01 INFO CodeGenerator: Code generated in 4.108958 ms
+26/10/16 02:45:01 INFO SparkContext: Starting job: first at /tmp/spark-f51d182a-6a9b-49cb-8a25-6ca824d10828/03_hive_etl.py:45
+26/10/16 02:45:01 INFO DAGScheduler: Got job 1 (first at /tmp/spark-f51d182a-6a9b-49cb-8a25-6ca824d10828/03_hive_etl.py:45) with 1 output partitions
+26/10/16 02:45:01 INFO DAGScheduler: Final stage: ResultStage 1 (first at /tmp/spark-f51d182a-6a9b-49cb-8a25-6ca824d10828/03_hive_etl.py:45)
+26/10/16 02:45:01 INFO DAGScheduler: Parents of final stage: List()
+26/10/16 02:45:01 INFO DAGScheduler: Missing parents: List()
+26/10/16 02:45:01 INFO DAGScheduler: Missing parents found for ResultStage 1: List()
+26/10/16 02:45:01 INFO DAGScheduler: Submitting ResultStage 1 (MapPartitionsRDD[6] at first at /tmp/spark-f51d182a-6a9b-49cb-8a25-6ca824d10828/03_hive_etl.py:45), which has no missing parents
+26/10/16 02:45:01 INFO MemoryStore: Block broadcast_2 stored as values in memory (estimated size 8.5 KiB, free 434.4 MiB)
+26/10/16 02:45:01 INFO MemoryStore: Block broadcast_2_piece0 stored as bytes in memory (estimated size 4.2 KiB, free 434.4 MiB)
+26/10/16 02:45:01 INFO SparkContext: Created broadcast 2 from broadcast at DAGScheduler.scala:1686
+26/10/16 02:45:01 INFO DAGScheduler: Submitting 1 missing tasks from ResultStage 1 (MapPartitionsRDD[6] at first at /tmp/spark-f51d182a-6a9b-49cb-8a25-6ca824d10828/03_hive_etl.py:45) (first 15 tasks are for partitions Vector(0))
+26/10/16 02:45:01 INFO TaskSchedulerImpl: Adding task set 1.0 with 1 tasks resource profile 0
+26/10/16 02:45:01 INFO TaskSetManager: Starting task 0.0 in stage 1.0 (TID 1) (172.22.0.6,executor 0, partition 0, PROCESS_LOCAL, 10577 bytes) 
+26/10/16 02:45:01 INFO TaskSetManager: Finished task 0.0 in stage 1.0 (TID 1) in 435 ms on 172.22.0.6 (executor 0) (1/1)
+26/10/16 02:45:01 INFO TaskSchedulerImpl: Removed TaskSet 1.0 whose tasks have all completed, from pool 
+26/10/16 02:45:01 INFO DAGScheduler: ResultStage 1 (first at /tmp/spark-f51d182a-6a9b-49cb-8a25-6ca824d10828/03_hive_etl.py:45) finished in 444 ms
+26/10/16 02:45:01 INFO DAGScheduler: Job 1 is finished. Cancelling potential speculative or zombie tasks for this job
+26/10/16 02:45:01 INFO TaskSchedulerImpl: Canceling stage 1
+26/10/16 02:45:01 INFO TaskSchedulerImpl: Killing all running tasks in stage 1: Stage finished
+26/10/16 02:45:01 INFO DAGScheduler: Job 1 finished: first at /tmp/spark-f51d182a-6a9b-49cb-8a25-6ca824d10828/03_hive_etl.py:45, took 446.467333 ms
+26/10/16 02:45:01 INFO SparkContext: Starting job: first at /tmp/spark-f51d182a-6a9b-49cb-8a25-6ca824d10828/03_hive_etl.py:45
+26/10/16 02:45:01 INFO DAGScheduler: Got job 2 (first at /tmp/spark-f51d182a-6a9b-49cb-8a25-6ca824d10828/03_hive_etl.py:45) with 1 output partitions
+26/10/16 02:45:01 INFO DAGScheduler: Final stage: ResultStage 2 (first at /tmp/spark-f51d182a-6a9b-49cb-8a25-6ca824d10828/03_hive_etl.py:45)
+26/10/16 02:45:01 INFO DAGScheduler: Parents of final stage: List()
+26/10/16 02:45:01 INFO DAGScheduler: Missing parents: List()
+26/10/16 02:45:01 INFO DAGScheduler: Missing parents found for ResultStage 2: List()
+26/10/16 02:45:01 INFO DAGScheduler: Submitting ResultStage 2 (MapPartitionsRDD[6] at first at /tmp/spark-f51d182a-6a9b-49cb-8a25-6ca824d10828/03_hive_etl.py:45), which has no missing parents
+26/10/16 02:45:01 INFO MemoryStore: Block broadcast_3 stored as values in memory (estimated size 8.5 KiB, free 434.4 MiB)
+26/10/16 02:45:01 INFO MemoryStore: Block broadcast_3_piece0 stored as bytes in memory (estimated size 4.2 KiB, free 434.4 MiB)
+26/10/16 02:45:01 INFO SparkContext: Created broadcast 3 from broadcast at DAGScheduler.scala:1686
+26/10/16 02:45:01 INFO DAGScheduler: Submitting 1 missing tasks from ResultStage 2 (MapPartitionsRDD[6] at first at /tmp/spark-f51d182a-6a9b-49cb-8a25-6ca824d10828/03_hive_etl.py:45) (first 15 tasks are for partitions Vector(1))
+26/10/16 02:45:01 INFO TaskSchedulerImpl: Adding task set 2.0 with 1 tasks resource profile 0
+26/10/16 02:45:01 INFO TaskSetManager: Starting task 0.0 in stage 2.0 (TID 2) (172.22.0.6,executor 0, partition 1, PROCESS_LOCAL, 10922 bytes) 
+26/10/16 02:45:01 INFO TaskSetManager: Finished task 0.0 in stage 2.0 (TID 2) in 22 ms on 172.22.0.6 (executor 0) (1/1)
+26/10/16 02:45:01 INFO TaskSchedulerImpl: Removed TaskSet 2.0 whose tasks have all completed, from pool 
+26/10/16 02:45:01 INFO DAGScheduler: ResultStage 2 (first at /tmp/spark-f51d182a-6a9b-49cb-8a25-6ca824d10828/03_hive_etl.py:45) finished in 26 ms
+26/10/16 02:45:01 INFO DAGScheduler: Job 2 is finished. Cancelling potential speculative or zombie tasks for this job
+26/10/16 02:45:01 INFO TaskSchedulerImpl: Canceling stage 2
+26/10/16 02:45:01 INFO TaskSchedulerImpl: Killing all running tasks in stage 2: Stage finished
+26/10/16 02:45:01 INFO DAGScheduler: Job 2 finished: first at /tmp/spark-f51d182a-6a9b-49cb-8a25-6ca824d10828/03_hive_etl.py:45, took 28.07875 ms
+demo.orders location: s3a://warehouse/demo.db/orders
+26/10/16 02:45:01 INFO HadoopFSUtils: Listing s3a://warehouse/demo.db/orders with listFiles API
+26/10/16 02:45:01 INFO InMemoryFileIndex: It took 5 ms to list leaf files for 1 paths.
+26/10/16 02:45:01 INFO FileSourceStrategy: Pushed Filters: 
+26/10/16 02:45:01 INFO FileSourceStrategy: Post-Scan Filters: Set()
+26/10/16 02:45:02 INFO CodeGenerator: Code generated in 47.735041 ms
+26/10/16 02:45:02 INFO MemoryStore: Block broadcast_4 stored as values in memory (estimated size 221.6 KiB, free 434.2 MiB)
+26/10/16 02:45:02 INFO MemoryStore: Block broadcast_4_piece0 stored as bytes in memory (estimated size 40.5 KiB, free 434.1 MiB)
+26/10/16 02:45:02 INFO SparkContext: Created broadcast 4 from $anonfun$withThreadLocalCaptured$2 at CompletableFuture.java:1768
+26/10/16 02:45:02 INFO FileSourceScanExec: Planning scan with bin packing, max size: 4194304 bytes, open cost is considered as scanning 4194304 bytes.
+26/10/16 02:45:02 INFO DAGScheduler: Registering RDD 10 ($anonfun$withThreadLocalCaptured$2 at CompletableFuture.java:1768) as input to shuffle 0
+26/10/16 02:45:02 INFO DAGScheduler: Got map stage job 3 ($anonfun$withThreadLocalCaptured$2 at CompletableFuture.java:1768) with 1 output partitions
+26/10/16 02:45:02 INFO DAGScheduler: Final stage: ShuffleMapStage 3 ($anonfun$withThreadLocalCaptured$2 at CompletableFuture.java:1768)
+26/10/16 02:45:02 INFO DAGScheduler: Parents of final stage: List()
+26/10/16 02:45:02 INFO DAGScheduler: Missing parents: List()
+26/10/16 02:45:02 INFO DAGScheduler: Missing parents found for ShuffleMapStage 3: List()
+26/10/16 02:45:02 INFO DAGScheduler: Submitting ShuffleMapStage 3 (MapPartitionsRDD[10] at $anonfun$withThreadLocalCaptured$2 at CompletableFuture.java:1768), which has no missing parents
+26/10/16 02:45:02 INFO MemoryStore: Block broadcast_5 stored as values in memory (estimated size 39.7 KiB, free 434.1 MiB)
+26/10/16 02:45:02 INFO MemoryStore: Block broadcast_5_piece0 stored as bytes in memory (estimated size 17.3 KiB, free 434.1 MiB)
+26/10/16 02:45:02 INFO SparkContext: Created broadcast 5 from broadcast at DAGScheduler.scala:1686
+26/10/16 02:45:02 INFO DAGScheduler: Submitting 1 missing tasks from ShuffleMapStage 3 (MapPartitionsRDD[10] at $anonfun$withThreadLocalCaptured$2 at CompletableFuture.java:1768) (first 15 tasks are for partitions Vector(0))
+26/10/16 02:45:02 INFO TaskSchedulerImpl: Adding task set 3.0 with 1 tasks resource profile 0
+26/10/16 02:45:02 INFO TaskSetManager: Starting task 0.0 in stage 3.0 (TID 3) (172.22.0.6,executor 1, partition 0, PROCESS_LOCAL, 10285 bytes) 
+26/10/16 02:45:02 INFO TaskSetManager: Finished task 0.0 in stage 3.0 (TID 3) in 329 ms on 172.22.0.6 (executor 1) (1/1)
+26/10/16 02:45:02 INFO TaskSchedulerImpl: Removed TaskSet 3.0 whose tasks have all completed, from pool 
+26/10/16 02:45:02 INFO DAGScheduler: ShuffleMapStage 3 ($anonfun$withThreadLocalCaptured$2 at CompletableFuture.java:1768) finished in 339 ms
+26/10/16 02:45:02 INFO DAGScheduler: looking for newly runnable stages
+26/10/16 02:45:02 INFO DAGScheduler: running: HashSet()
+26/10/16 02:45:02 INFO DAGScheduler: waiting: HashSet()
+26/10/16 02:45:02 INFO DAGScheduler: failed: HashSet()
+26/10/16 02:45:02 INFO ShufflePartitionsUtil: For shuffle(0, advisory target size: 67108864, actual target size 1048576, minimum partition size: 1048576
+26/10/16 02:45:02 INFO CodeGenerator: Code generated in 12.382708 ms
+26/10/16 02:45:02 INFO HashAggregateExec: spark.sql.codegen.aggregate.map.twolevel.enabled is set to true, but current version of codegened fast hashmap does not support this aggregate.
+26/10/16 02:45:02 INFO CodeGenerator: Code generated in 15.612666 ms
+26/10/16 02:45:02 INFO SparkContext: Starting job: $anonfun$withThreadLocalCaptured$2 at CompletableFuture.java:1768
+26/10/16 02:45:02 INFO DAGScheduler: Got job 4 ($anonfun$withThreadLocalCaptured$2 at CompletableFuture.java:1768) with 1 output partitions
+26/10/16 02:45:02 INFO DAGScheduler: Final stage: ResultStage 5 ($anonfun$withThreadLocalCaptured$2 at CompletableFuture.java:1768)
+26/10/16 02:45:02 INFO DAGScheduler: Parents of final stage: List(ShuffleMapStage 4)
+26/10/16 02:45:02 INFO DAGScheduler: Missing parents: List()
+26/10/16 02:45:02 INFO DAGScheduler: Missing parents found for ResultStage 5: List()
+26/10/16 02:45:02 INFO DAGScheduler: Submitting ResultStage 5 (MapPartitionsRDD[14] at $anonfun$withThreadLocalCaptured$2 at CompletableFuture.java:1768), which has no missing parents
+26/10/16 02:45:02 INFO MemoryStore: Block broadcast_6 stored as values in memory (estimated size 44.6 KiB, free 434.1 MiB)
+26/10/16 02:45:02 INFO MemoryStore: Block broadcast_6_piece0 stored as bytes in memory (estimated size 19.7 KiB, free 434.1 MiB)
+26/10/16 02:45:02 INFO SparkContext: Created broadcast 6 from broadcast at DAGScheduler.scala:1686
+26/10/16 02:45:02 INFO DAGScheduler: Submitting 1 missing tasks from ResultStage 5 (MapPartitionsRDD[14] at $anonfun$withThreadLocalCaptured$2 at CompletableFuture.java:1768) (first 15 tasks are for partitions Vector(0))
+26/10/16 02:45:02 INFO TaskSchedulerImpl: Adding task set 5.0 with 1 tasks resource profile 0
+26/10/16 02:45:02 INFO TaskSetManager: Starting task 0.0 in stage 5.0 (TID 4) (172.22.0.6,executor 1, partition 0, NODE_LOCAL, 9635 bytes) 
+26/10/16 02:45:02 INFO MapOutputTrackerMasterEndpoint: Asked to send map output locations for shuffle 0 to 172.22.0.6:49030
+26/10/16 02:45:02 INFO TaskSetManager: Finished task 0.0 in stage 5.0 (TID 4) in 181 ms on 172.22.0.6 (executor 1) (1/1)
+26/10/16 02:45:02 INFO TaskSchedulerImpl: Removed TaskSet 5.0 whose tasks have all completed, from pool 
+26/10/16 02:45:02 INFO DAGScheduler: ResultStage 5 ($anonfun$withThreadLocalCaptured$2 at CompletableFuture.java:1768) finished in 190 ms
+26/10/16 02:45:02 INFO DAGScheduler: Job 4 is finished. Cancelling potential speculative or zombie tasks for this job
+26/10/16 02:45:02 INFO TaskSchedulerImpl: Canceling stage 5
+26/10/16 02:45:02 INFO TaskSchedulerImpl: Killing all running tasks in stage 5: Stage finished
+26/10/16 02:45:02 INFO DAGScheduler: Job 4 finished: $anonfun$withThreadLocalCaptured$2 at CompletableFuture.java:1768, took 194.615792 ms
+26/10/16 02:45:02 INFO CodeGenerator: Code generated in 9.544792 ms
+26/10/16 02:45:02 INFO CodeGenerator: Code generated in 17.038166 ms
++------+------+--------+
+|region|orders|revenue |
++------+------+--------+
+|North |39    |35787.59|
+|South |28    |28741.15|
+|East  |28    |22243.38|
+|West  |25    |22122.39|
++------+------+--------+
+
+26/10/16 02:45:02 INFO FileSourceStrategy: Pushed Filters: 
+26/10/16 02:45:02 INFO FileSourceStrategy: Post-Scan Filters: Set()
+26/10/16 02:45:02 INFO CodeGenerator: Code generated in 5.746291 ms
+26/10/16 02:45:02 INFO MemoryStore: Block broadcast_7 stored as values in memory (estimated size 219.9 KiB, free 433.9 MiB)
+26/10/16 02:45:02 INFO MemoryStore: Block broadcast_7_piece0 stored as bytes in memory (estimated size 39.9 KiB, free 433.8 MiB)
+26/10/16 02:45:02 INFO SparkContext: Created broadcast 7 from $anonfun$withThreadLocalCaptured$2 at CompletableFuture.java:1768
+26/10/16 02:45:02 INFO FileSourceScanExec: Planning scan with bin packing, max size: 4194304 bytes, open cost is considered as scanning 4194304 bytes.
+26/10/16 02:45:02 INFO DAGScheduler: Registering RDD 18 ($anonfun$withThreadLocalCaptured$2 at CompletableFuture.java:1768) as input to shuffle 1
+26/10/16 02:45:02 INFO DAGScheduler: Got map stage job 5 ($anonfun$withThreadLocalCaptured$2 at CompletableFuture.java:1768) with 1 output partitions
+26/10/16 02:45:02 INFO DAGScheduler: Final stage: ShuffleMapStage 6 ($anonfun$withThreadLocalCaptured$2 at CompletableFuture.java:1768)
+26/10/16 02:45:02 INFO DAGScheduler: Parents of final stage: List()
+26/10/16 02:45:02 INFO DAGScheduler: Missing parents: List()
+26/10/16 02:45:02 INFO DAGScheduler: Missing parents found for ShuffleMapStage 6: List()
+26/10/16 02:45:02 INFO DAGScheduler: Submitting ShuffleMapStage 6 (MapPartitionsRDD[18] at $anonfun$withThreadLocalCaptured$2 at CompletableFuture.java:1768), which has no missing parents
+26/10/16 02:45:02 INFO MemoryStore: Block broadcast_8 stored as values in memory (estimated size 19.9 KiB, free 433.8 MiB)
+26/10/16 02:45:02 INFO MemoryStore: Block broadcast_8_piece0 stored as bytes in memory (estimated size 9.7 KiB, free 433.8 MiB)
+26/10/16 02:45:02 INFO SparkContext: Created broadcast 8 from broadcast at DAGScheduler.scala:1686
+26/10/16 02:45:02 INFO DAGScheduler: Submitting 1 missing tasks from ShuffleMapStage 6 (MapPartitionsRDD[18] at $anonfun$withThreadLocalCaptured$2 at CompletableFuture.java:1768) (first 15 tasks are for partitions Vector(0))
+26/10/16 02:45:02 INFO TaskSchedulerImpl: Adding task set 6.0 with 1 tasks resource profile 0
+26/10/16 02:45:02 INFO TaskSetManager: Starting task 0.0 in stage 6.0 (TID 5) (172.22.0.6,executor 1, partition 0, PROCESS_LOCAL, 10214 bytes) 
+26/10/16 02:45:02 INFO TaskSetManager: Finished task 0.0 in stage 6.0 (TID 5) in 61 ms on 172.22.0.6 (executor 1) (1/1)
+26/10/16 02:45:02 INFO TaskSchedulerImpl: Removed TaskSet 6.0 whose tasks have all completed, from pool 
+26/10/16 02:45:02 INFO DAGScheduler: ShuffleMapStage 6 ($anonfun$withThreadLocalCaptured$2 at CompletableFuture.java:1768) finished in 67 ms
+26/10/16 02:45:02 INFO DAGScheduler: looking for newly runnable stages
+26/10/16 02:45:02 INFO DAGScheduler: running: HashSet()
+26/10/16 02:45:02 INFO DAGScheduler: waiting: HashSet()
+26/10/16 02:45:02 INFO DAGScheduler: failed: HashSet()
+26/10/16 02:45:02 INFO CodeGenerator: Code generated in 4.756833 ms
+26/10/16 02:45:02 INFO SparkContext: Starting job: $anonfun$withThreadLocalCaptured$2 at CompletableFuture.java:1768
+26/10/16 02:45:02 INFO DAGScheduler: Got job 6 ($anonfun$withThreadLocalCaptured$2 at CompletableFuture.java:1768) with 1 output partitions
+26/10/16 02:45:02 INFO DAGScheduler: Final stage: ResultStage 8 ($anonfun$withThreadLocalCaptured$2 at CompletableFuture.java:1768)
+26/10/16 02:45:02 INFO DAGScheduler: Parents of final stage: List(ShuffleMapStage 7)
+26/10/16 02:45:02 INFO DAGScheduler: Missing parents: List()
+26/10/16 02:45:02 INFO DAGScheduler: Missing parents found for ResultStage 8: List()
+26/10/16 02:45:02 INFO DAGScheduler: Submitting ResultStage 8 (MapPartitionsRDD[21] at $anonfun$withThreadLocalCaptured$2 at CompletableFuture.java:1768), which has no missing parents
+26/10/16 02:45:02 INFO MemoryStore: Block broadcast_9 stored as values in memory (estimated size 13.8 KiB, free 433.8 MiB)
+26/10/16 02:45:02 INFO MemoryStore: Block broadcast_9_piece0 stored as bytes in memory (estimated size 6.6 KiB, free 433.8 MiB)
+26/10/16 02:45:02 INFO SparkContext: Created broadcast 9 from broadcast at DAGScheduler.scala:1686
+26/10/16 02:45:02 INFO DAGScheduler: Submitting 1 missing tasks from ResultStage 8 (MapPartitionsRDD[21] at $anonfun$withThreadLocalCaptured$2 at CompletableFuture.java:1768) (first 15 tasks are for partitions Vector(0))
+26/10/16 02:45:02 INFO TaskSchedulerImpl: Adding task set 8.0 with 1 tasks resource profile 0
+26/10/16 02:45:02 INFO TaskSetManager: Starting task 0.0 in stage 8.0 (TID 6) (172.22.0.6,executor 1, partition 0, NODE_LOCAL, 9635 bytes) 
+26/10/16 02:45:03 INFO MapOutputTrackerMasterEndpoint: Asked to send map output locations for shuffle 1 to 172.22.0.6:49030
+26/10/16 02:45:03 INFO TaskSetManager: Finished task 0.0 in stage 8.0 (TID 6) in 28 ms on 172.22.0.6 (executor 1) (1/1)
+26/10/16 02:45:03 INFO TaskSchedulerImpl: Removed TaskSet 8.0 whose tasks have all completed, from pool 
+26/10/16 02:45:03 INFO DAGScheduler: ResultStage 8 ($anonfun$withThreadLocalCaptured$2 at CompletableFuture.java:1768) finished in 32 ms
+26/10/16 02:45:03 INFO DAGScheduler: Job 6 is finished. Cancelling potential speculative or zombie tasks for this job
+26/10/16 02:45:03 INFO TaskSchedulerImpl: Canceling stage 8
+26/10/16 02:45:03 INFO TaskSchedulerImpl: Killing all running tasks in stage 8: Stage finished
+26/10/16 02:45:03 INFO DAGScheduler: Job 6 finished: $anonfun$withThreadLocalCaptured$2 at CompletableFuture.java:1768, took 34.276125 ms
+26/10/16 02:45:03 INFO FileSourceStrategy: Pushed Filters: 
+26/10/16 02:45:03 INFO FileSourceStrategy: Post-Scan Filters: Set()
+26/10/16 02:45:03 INFO CodeGenerator: Code generated in 6.280917 ms
+26/10/16 02:45:03 INFO MemoryStore: Block broadcast_10 stored as values in memory (estimated size 221.3 KiB, free 433.6 MiB)
+26/10/16 02:45:03 INFO MemoryStore: Block broadcast_10_piece0 stored as bytes in memory (estimated size 40.5 KiB, free 433.5 MiB)
+26/10/16 02:45:03 INFO SparkContext: Created broadcast 10 from $anonfun$withThreadLocalCaptured$2 at CompletableFuture.java:1768
+26/10/16 02:45:03 INFO FileSourceScanExec: Planning scan with bin packing, max size: 4194304 bytes, open cost is considered as scanning 4194304 bytes.
+26/10/16 02:45:03 INFO DAGScheduler: Registering RDD 25 ($anonfun$withThreadLocalCaptured$2 at CompletableFuture.java:1768) as input to shuffle 2
+26/10/16 02:45:03 INFO DAGScheduler: Got map stage job 7 ($anonfun$withThreadLocalCaptured$2 at CompletableFuture.java:1768) with 1 output partitions
+26/10/16 02:45:03 INFO DAGScheduler: Final stage: ShuffleMapStage 9 ($anonfun$withThreadLocalCaptured$2 at CompletableFuture.java:1768)
+26/10/16 02:45:03 INFO DAGScheduler: Parents of final stage: List()
+26/10/16 02:45:03 INFO DAGScheduler: Missing parents: List()
+26/10/16 02:45:03 INFO DAGScheduler: Missing parents found for ShuffleMapStage 9: List()
+26/10/16 02:45:03 INFO DAGScheduler: Submitting ShuffleMapStage 9 (MapPartitionsRDD[25] at $anonfun$withThreadLocalCaptured$2 at CompletableFuture.java:1768), which has no missing parents
+26/10/16 02:45:03 INFO MemoryStore: Block broadcast_11 stored as values in memory (estimated size 18.6 KiB, free 433.5 MiB)
+26/10/16 02:45:03 INFO MemoryStore: Block broadcast_11_piece0 stored as bytes in memory (estimated size 8.5 KiB, free 433.5 MiB)
+26/10/16 02:45:03 INFO SparkContext: Created broadcast 11 from broadcast at DAGScheduler.scala:1686
+26/10/16 02:45:03 INFO DAGScheduler: Submitting 1 missing tasks from ShuffleMapStage 9 (MapPartitionsRDD[25] at $anonfun$withThreadLocalCaptured$2 at CompletableFuture.java:1768) (first 15 tasks are for partitions Vector(0))
+26/10/16 02:45:03 INFO TaskSchedulerImpl: Adding task set 9.0 with 1 tasks resource profile 0
+26/10/16 02:45:03 INFO TaskSetManager: Starting task 0.0 in stage 9.0 (TID 7) (172.22.0.6,executor 1, partition 0, PROCESS_LOCAL, 10285 bytes) 
+26/10/16 02:45:03 INFO TaskSetManager: Finished task 0.0 in stage 9.0 (TID 7) in 49 ms on 172.22.0.6 (executor 1) (1/1)
+26/10/16 02:45:03 INFO TaskSchedulerImpl: Removed TaskSet 9.0 whose tasks have all completed, from pool 
+26/10/16 02:45:03 INFO DAGScheduler: ShuffleMapStage 9 ($anonfun$withThreadLocalCaptured$2 at CompletableFuture.java:1768) finished in 52 ms
+26/10/16 02:45:03 INFO DAGScheduler: looking for newly runnable stages
+26/10/16 02:45:03 INFO DAGScheduler: running: HashSet()
+26/10/16 02:45:03 INFO DAGScheduler: waiting: HashSet()
+26/10/16 02:45:03 INFO DAGScheduler: failed: HashSet()
+26/10/16 02:45:03 INFO SparkContext: Starting job: $anonfun$withThreadLocalCaptured$2 at CompletableFuture.java:1768
+26/10/16 02:45:03 INFO DAGScheduler: Got job 8 ($anonfun$withThreadLocalCaptured$2 at CompletableFuture.java:1768) with 1 output partitions
+26/10/16 02:45:03 INFO DAGScheduler: Final stage: ResultStage 11 ($anonfun$withThreadLocalCaptured$2 at CompletableFuture.java:1768)
+26/10/16 02:45:03 INFO DAGScheduler: Parents of final stage: List(ShuffleMapStage 10)
+26/10/16 02:45:03 INFO DAGScheduler: Missing parents: List()
+26/10/16 02:45:03 INFO DAGScheduler: Missing parents found for ResultStage 11: List()
+26/10/16 02:45:03 INFO DAGScheduler: Submitting ResultStage 11 (MapPartitionsRDD[28] at $anonfun$withThreadLocalCaptured$2 at CompletableFuture.java:1768), which has no missing parents
+26/10/16 02:45:03 INFO MemoryStore: Block broadcast_12 stored as values in memory (estimated size 13.8 KiB, free 433.5 MiB)
+26/10/16 02:45:03 INFO MemoryStore: Block broadcast_12_piece0 stored as bytes in memory (estimated size 6.6 KiB, free 433.5 MiB)
+26/10/16 02:45:03 INFO SparkContext: Created broadcast 12 from broadcast at DAGScheduler.scala:1686
+26/10/16 02:45:03 INFO DAGScheduler: Submitting 1 missing tasks from ResultStage 11 (MapPartitionsRDD[28] at $anonfun$withThreadLocalCaptured$2 at CompletableFuture.java:1768) (first 15 tasks are for partitions Vector(0))
+26/10/16 02:45:03 INFO TaskSchedulerImpl: Adding task set 11.0 with 1 tasks resource profile 0
+26/10/16 02:45:03 INFO TaskSetManager: Starting task 0.0 in stage 11.0 (TID 8) (172.22.0.6,executor 1, partition 0, NODE_LOCAL, 9635 bytes) 
+26/10/16 02:45:03 INFO MapOutputTrackerMasterEndpoint: Asked to send map output locations for shuffle 2 to 172.22.0.6:49030
+26/10/16 02:45:03 INFO TaskSetManager: Finished task 0.0 in stage 11.0 (TID 8) in 16 ms on 172.22.0.6 (executor 1) (1/1)
+26/10/16 02:45:03 INFO TaskSchedulerImpl: Removed TaskSet 11.0 whose tasks have all completed, from pool 
+26/10/16 02:45:03 INFO DAGScheduler: ResultStage 11 ($anonfun$withThreadLocalCaptured$2 at CompletableFuture.java:1768) finished in 20 ms
+26/10/16 02:45:03 INFO DAGScheduler: Job 8 is finished. Cancelling potential speculative or zombie tasks for this job
+26/10/16 02:45:03 INFO TaskSchedulerImpl: Canceling stage 11
+26/10/16 02:45:03 INFO TaskSchedulerImpl: Killing all running tasks in stage 11: Stage finished
+26/10/16 02:45:03 INFO DAGScheduler: Job 8 finished: $anonfun$withThreadLocalCaptured$2 at CompletableFuture.java:1768, took 21.01025 ms
+HIVE ETL OK
+26/10/16 02:45:03 INFO SparkContext: SparkContext is stopping with exitCode 0 from stop at NativeMethodAccessorImpl.java:0.
+26/10/16 02:45:03 INFO SparkUI: Stopped Spark web UI at http://kyuubi:4040
+26/10/16 02:45:03 INFO StandaloneSchedulerBackend: Shutting down all executors
+26/10/16 02:45:03 INFO StandaloneSchedulerBackend$StandaloneDriverEndpoint: Asking each executor to shut down
+26/10/16 02:45:03 INFO MapOutputTrackerMasterEndpoint: MapOutputTrackerMasterEndpoint stopped!
+26/10/16 02:45:03 INFO MemoryStore: MemoryStore cleared
+26/10/16 02:45:03 INFO BlockManager: BlockManager stopped
+26/10/16 02:45:03 INFO BlockManagerMaster: BlockManagerMaster stopped
+26/10/16 02:45:03 INFO OutputCommitCoordinator$OutputCommitCoordinatorEndpoint: OutputCommitCoordinator stopped!
+26/10/16 02:45:03 INFO SparkContext: Successfully stopped SparkContext (Uptime: 15357 ms)
